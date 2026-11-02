@@ -1,0 +1,34 @@
+[b]Ledger Mod[/b]
+Place Ledger at the end of a production chain to see which items pass through, the resources and operating currencies used to make them, and net profit or loss.
+
+[b]Features[/b]
+[list]
+[*]Zero storage: a blocked or full destination leaves the item at the original producer.
+[*]One matching input/output pair by default, expandable to five pairs.
+[*]Item names, icons and counts remain on the main node; six types per page.
+[*]Gear-configured rolling second, minute and hour windows.
+[*]Native bronze and burgundy UI, a revenue/cost/net table for every affected currency, and focused item and production views.
+[*]Gold/silver/copper denominations, native currency icons and separate units for all nine currencies. No hidden secondary currency totals.
+[*]Operating costs, revenue and net profit/loss for paid chains, even without a shop. Free passthrough chains focus on items, with no shop reminders.
+[*]Observed upstream resource/crafting costs, without charging intermediates twice.
+[*]Observed upstream production, including recruitment and equipment branches through Outfitter. Routing/storage nodes and unobserved placeholder rows are hidden.
+[*]Automatic Item Shop and Luxury Shop detection; actual sales determine revenue.
+[*]Separate currencies and explicit incomplete cost history.
+[/list]
+
+[b]Requirements and installation[/b]
+Kingdom Inc's Unity Mono build and BepInEx 5. Tested with the locally installed BepInEx 5.4.23.6. No other mod dependency. Extract the player ZIP into the game directory, then restart. The DLL belongs at BepInEx/plugins/LedgerMod/LedgerMod.dll. Manual installation; Vortex deployment is untested.
+
+[b]Unlock[/b]
+Research Ledger beside Accountant, then place it from the utility build menu.
+
+[b]Accounting limits[/b]
+Net profit/loss subtracts the observed operating costs of all passed items from confirmed revenue in the reporting window. Expenses without sales appear as losses. History is session-local and resets on load. Items already in production/storage and unsupported special transformations may have missing costs; a complete net figure is withheld for affected items. Native resource, crafting and Outfitter chains are supported. Building/research purchases are excluded. Productivity batch costs are charged once, at their first yield. Resource quantities are not converted into a guessed gold price. Read the included README for full behavior and compatibility details.
+
+[b]Removal[/b]
+Remove Ledger nodes from kingdoms you intend to keep, reconnect their production chains, save and close the game, then remove the LedgerMod plugin directory. Do not load saves containing custom Ledger nodes without the mod.
+
+[b]Credits[/b]
+Native game UI, fonts, frames and icons are referenced at runtime and are not bundled. UI/capture helpers adapted from the author's PartyNode project.
+
+Local listing draft only; no Nexus page or remote repository has been created.

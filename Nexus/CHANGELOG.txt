@@ -1,0 +1,55 @@
+0.3.0 - Currency table and focused reports
+- Replace single-currency summaries with one visible revenue/cost/net row for every affected currency.
+- Display Gold as native gold, silver and copper denominations; retain exact signs and separate currency units.
+- Expand the main node and report to fit all currency rows instead of hiding currencies in a caption.
+- Hide routing/storage stages and all unobserved quantity/spend placeholder rows.
+- Remove the Outputs tab; keep Items passed and Chain costs/Chain items.
+- Verify actual native recipe payments in all nine game currencies and their visible table/node values.
+
+0.2.4 - Profit and loss for paid chains without shops
+- Enable financial reporting for upstream operating costs and recorded currency activity, as well as connected shops.
+- Calculate net profit/loss as confirmed revenue minus operating costs of all passed items in the window.
+- Show expenses without sales as a red loss; keep every currency separate.
+- Detect configured native resource, Forest and crafting costs before production starts.
+- Keep free passthrough chains focused on items and retain no shop reminders.
+- Withhold a complete net figure when passed-item cost history is missing.
+
+0.2.3 - Newly placed node settings fix
+- Initialize Ledger's UI safely when native placement opens settings before Unity's Start callback.
+- Keep early open requests pending until the node and game UI are available.
+- Publish a settings window reference only after successful initialization; clean up failed construction.
+- Verify immediate new-node settings, subsequent Start without duplicate controls, configuration changes and gear reopening.
+
+0.2.2 - Complete connected chain and Outfitter history
+- Preserve human and equipment production histories through Outfitter's separate intake/completion updates.
+- Retain prior equipment costs across successive Outfitters, duplicate-equipment skips and timeout passthrough.
+- Show all connected upstream branches and resource sources, with unknown observations displayed as dashes.
+- Handle shared upstream sources and cyclic wiring without duplicate traversal or recursion.
+- Preserve known upstream history through unsupported delayed utilities while keeping extra costs incomplete.
+- Verify a native Mine/Forge/Blacksmith and Barracks chain through Outfitter into Ledger.
+
+0.2.1 - Operating costs and automatic passthrough view
+- Show operating costs, revenue and profit directly on the main node when connected to a shop.
+- Show all passed-item operating costs in the report summary; keep sold-item costs as the profit basis.
+- Automatically switch to item counts, routes and resource quantities without a shop destination.
+- Hide monetary values and cost warnings outside shop mode; remove shop guidance from the node.
+- Preserve reporting history when switching modes, including through chained Ledgers and full shops.
+
+0.2.0 - Native UI redesign
+- Restyle Ledger with the game's own bronze frames, burgundy panels, pixel icons and native controls.
+- Replace the text report with revenue/cost/profit totals and Items passed, Chain costs and Outputs tabs.
+- Add aligned item/resource rows, scrollable production costs, readable route states and contextual tooltips.
+- Clean up the main-node item list and distinguish profit/loss with color.
+- Preserve zero-storage behavior and the independent settings overlay.
+
+0.1.1 - Settings window visibility fix
+- Open Ledger settings in an independent screen overlay, including when the native HUD is hidden.
+- Fit the panel to the display and keep UI scaling, mouse controls and Escape/backdrop closing.
+- Verify real mouse press/release, topmost settings controls, subsequent frames and hidden-HUD visibility.
+
+0.1.0 - Initial local release
+- Zero-storage paired production lanes, default 1/1 and configurable up to 5/5.
+- Main-node item list and rolling second/minute/hour reports.
+- Observed resource/crafting cost provenance and batch cost conservation.
+- Automatic Item Shop/Luxury Shop detection and confirmed-sale profit.
+- Explicit incomplete costs, native copy/save settings, cleanup protection and isolated diagnostics.
