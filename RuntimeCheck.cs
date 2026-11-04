@@ -95,6 +95,7 @@ namespace KingdomLedger
    Check(ledger.Inputs.Count==1&&ledger.Outputs.Count==1,"Default 1 in / 1 out");
 
    Check(ledger.IO.All(io=>io.BufferSize==0),"Every Ledger port has zero storage capacity");
+   LayoutModelChecks();
 
    receiver.Inputs[0].BufferedItems.Add(Item());input.Update(0);
 
@@ -629,6 +630,9 @@ namespace KingdomLedger
      Capture(Path.Combine(directory,"ledger-five-pairs.png"));
 
      CaptureStylePreview(ledger,view,shop,directory);
+     IncomeChecks(ledger,view,directory);
+     TimerChecks(ledger,view,directory);
+     LayoutWorldChecks(ledger,view,directory);
 
     }catch(Exception e){error=e.ToString();}
 
@@ -870,11 +874,24 @@ namespace KingdomLedger
 
     Check(Enum.GetNames(typeof(Currency)).All(k=>currencyTable.Find(k)?.gameObject.activeSelf==true),"Every affected currency has a visible revenue, expense and net row");
 
-    Check(FinanceAmount(view.Settings,"Gold","Cost")=="6g 62s 5c"&&FinanceAmount(view.Settings,"Gold","Net")=="+1g 37s 95c","Gold summary renders exact coin denominations and carries correctly between them");
+    Check(FinanceAmount(view.Settings,"Gold","Cost")=="-6g 62s 5c"&&FinanceAmount(view.Settings,"Gold","Net")=="+1g 37s 95c","Gold summary renders exact coin denominations and carries correctly between them");
 
-    Check(Enum.GetNames(typeof(Currency)).All(k=>NodeAmount(view,k,"Cost")==LedgerHistory.Amount(k,trace.Money[k])),"Main node lists every affected currency without truncating the list to one currency");
+    Check(Enum.GetNames(typeof(Currency)).All(k=>NodeAmount(view,k,"Net")==LedgerHistory.Amount(k,(k=="Gold"?80000m:k=="Crown"?10m:0m)-trace.Money[k],true)),"Main node lists every affected currency without truncating the list to one currency");
 
-    Check(ledger.Size.y>Ledger.Height,"Main node grows to fit all currency rows");
+    Check(ledger.Size.y>=Ledger.DisplayHeight(ledger.Inputs.Count,1,9),"Main node fits all currency rows on the native grid");
+
+    var affected=ledger.History.Summary(60).Currencies;var strip=view.transform.Find("LedgerDisplay/MonetaryTotals");
+    Check(affected.Select((k,i)=>((RectTransform)strip.Find(k)).anchoredPosition==new Vector2((i%2)*LedgerWorld.CurrencyStride,-17-(i/2)*20)).All(v=>v),"Profit grid fills left to right in two columns before starting the next row");
+    Check(ledger.Size.y==Ledger.DisplayHeight(ledger.Inputs.Count,1,9)&&affected.All(k=>((RectTransform)strip.Find(k)).sizeDelta==new Vector2(LedgerWorld.CurrencyWidth,20)),"Nine affected currencies occupy five compact grid rows");
+    Check(affected.All(k=>strip.Find(k+"/Cost")==null&&strip.Find(k+"/Revenue")==null&&strip.Find(k+"/Net").GetComponent<TMP_Text>().fontSizeMax==12),"Node shows only one smaller combined profit value per currency");
+
+
+    Check(Enum.GetNames(typeof(Currency)).All(k=>currencyTable.Find(k+"/Cost").GetComponentsInChildren<TMP_Text>().All(t=>t.color==LedgerUi.Red)),"Every affected currency displays operating costs in red");
+    Check(view.transform.Find("LedgerDisplay/MonetaryTotals/Gold/Net").GetComponent<TMP_Text>().color==LedgerUi.Green&&view.transform.Find("LedgerDisplay/MonetaryTotals/Mana/Net").GetComponent<TMP_Text>().color==LedgerUi.Red,"Node profit grid preserves green gains and red losses");
+    Check(FinanceAmount(view.Settings,"Gold","Revenue")=="+8g 0s 0c"&&FinanceAmount(view.Settings,"Crown","Revenue")=="+10","Revenue shows a positive sign for Gold denominations and other currencies");
+    Check(currencyTable.Find("Gold/Revenue").GetComponentsInChildren<TMP_Text>().All(t=>t.color==LedgerUi.Paper),"Revenue retains its original paper color");
+    Check(currencyTable.Find("Gold/Net").GetComponentsInChildren<TMP_Text>().All(t=>t.color==LedgerUi.Green)&&currencyTable.Find("Mana/Net").GetComponentsInChildren<TMP_Text>().All(t=>t.color==LedgerUi.Red),"Net gain and loss colors remain unchanged");
+
 
     var text=view.Settings.GetComponentsInChildren<TMP_Text>();
 
@@ -895,6 +912,15 @@ namespace KingdomLedger
     Capture(Path.Combine(directory,"ledger-all-currencies.png"));
     view.Settings.GetComponentsInChildren<Button>().Single(b=>b.name=="ItemsPassedTab").onClick.Invoke();
     Capture(Path.Combine(directory,"ledger-currencies-preview.png"));view.Settings.ClosePopup();Capture(Path.Combine(directory,"ledger-all-currencies-node.png"));
+
+    var moreItems=new[]{"iron_sword","iron_helm","wood_log","iron_ore","sapphire","conscript"};
+    foreach(var id in moreItems){var extra=Item(id);LedgerObserver.SetTrace(extra,new CostTrace());ledger.History.Pass(extra,0,storage);}
+    view.Refresh();var display=view.transform.Find("LedgerDisplay");
+    Check(moreItems.Concat(new[]{"iron_ingot"}).All(id=>display.GetComponentsInChildren<TMP_Text>().Any(t=>t.text==LedgerHistory.ItemName(id))),"Removing paging controls keeps every passed item type visible, including a seventh type");
+    Check(display.GetComponentsInChildren<Button>().All(b=>b.name=="LedgerGear")&&!display.GetComponentsInChildren<TMP_Text>().Any(t=>t.text.Contains(" in / ")),"Main node has no input/output footer, page counter or paging arrows");
+    Check(ledger.Size.y==Ledger.DisplayHeight(ledger.Inputs.Count,7,9)&&((RectTransform)display.Find("MonetaryTotals")).anchoredPosition.y==-240,"Item list expands above the profit grid while the node ends just below its last currency row");
+    Capture(Path.Combine(directory,"ledger-node-no-footer.png"));
+
 
    }
 
@@ -920,11 +946,11 @@ namespace KingdomLedger
 
    var unsold=Item();Seed(unsold,20000);ledger.History.Pass(unsold,0,shop);view.Refresh();
 
-   Check(NodeAmount(view,"Gold","Cost")=="3g 24s 0c","Main node includes operating costs of unsold passed items");
+   Check(NodeAmount(view,"Gold","Net")=="+1g 8s 0c","Main node combines revenue and all passed-item operating costs into one profit value");
 
    view.OpenSettings();
 
-   Check(FinanceAmount(view.Settings,"Gold","Cost")=="3g 24s 0c","Operating cost total includes every passed item's observed spend");
+   Check(FinanceAmount(view.Settings,"Gold","Cost")=="-3g 24s 0c","Operating cost total includes every passed item's observed spend");
 
    Check(FinanceAmount(view.Settings,"Gold","Net")=="+1g 8s 0c","Profit deducts all operating costs, including unsold passed items");
 
@@ -954,7 +980,7 @@ namespace KingdomLedger
 
    view.Refresh();view.Settings.Refresh();
 
-   Check(view.transform.Find("LedgerDisplay/MonetaryTotals").gameObject.activeSelf&&FinanceAmount(view.Settings,"Gold","Cost")=="3g 24s 0c","Reconnecting a shop restores monetary totals without losing history");
+   Check(view.transform.Find("LedgerDisplay/MonetaryTotals").gameObject.activeSelf&&FinanceAmount(view.Settings,"Gold","Cost")=="-3g 24s 0c","Reconnecting a shop restores monetary totals without losing history");
 
    var clock=LedgerHistory.Clock;var sink=new Stockpile();shop.Inputs[0].ConnectedPipe=null;Connect(ledger.Outputs[0],sink.Inputs[0]);
 
@@ -995,6 +1021,14 @@ namespace KingdomLedger
     Capture(Path.Combine(directory,"ledger-passthrough-report.png"));
 
     view.Settings.ClosePopup();Capture(Path.Combine(directory,"ledger-passthrough-node.png"));view.OpenSettings();
+
+    LedgerHistory.Clock=()=>clock()+280;sink.Inputs[0].BufferedItems.Clear();
+    var partial=Item();var partialTrace=new CostTrace{Complete=false};partialTrace.Money["Gold"]=20000;LedgerObserver.SetTrace(partial,partialTrace);ledger.Inputs[0].InputItem(partial);
+    view.Refresh();view.Settings.Refresh();
+    Check(NodeAmount(view,"Gold","Net")=="~-2g 0s 0c"&&view.transform.Find("LedgerDisplay/MonetaryTotals/Gold/Net").GetComponent<TMP_Text>().color==LedgerUi.Red,"Incomplete history shows known currency loss with an estimate marker instead of Unknown on the node");
+    Check(FinanceAmount(view.Settings,"Gold","Net")=="Unknown","Detailed report still distinguishes incomplete costs from a complete net result");
+    view.Settings.ClosePopup();Capture(Path.Combine(directory,"ledger-partial-profit-node.png"));view.OpenSettings();
+
 
    }
 

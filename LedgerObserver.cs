@@ -12,7 +12,7 @@ using HarmonyLib;
 
 namespace KingdomLedger
 {
- internal static class LedgerObserver
+ internal static partial class LedgerObserver
  {
   internal sealed class Batch {internal CostTrace Cost;internal bool Charged;}
   sealed class OutfitBatch {internal InventoryItem Human;internal CostTrace Cost;}
@@ -24,7 +24,7 @@ namespace KingdomLedger
    internal CraftingInput Input;
    internal InventoryItem Human,Equipment;
    internal int Queued;
-   internal long Till;
+   internal Dictionary<string,decimal> IncomeBefore;internal int StoredValue;internal float Delta,PassiveTimer;
    internal readonly List<InventoryItem> Consumed=new List<InventoryItem>();
    internal readonly Dictionary<string,decimal> Spent=new Dictionary<string,decimal>(),Earned=new Dictionary<string,decimal>();
   }
@@ -40,7 +40,7 @@ namespace KingdomLedger
   internal static void Reset()
   {
    player=GamePlayer.Current;traces=new ConditionalWeakTable<InventoryItem,CostTrace>();batches=new ConditionalWeakTable<CraftingInput,Batch>();outfits=new ConditionalWeakTable<Outfitter,OutfitBatch>();
-   queued=new ConditionalWeakTable<FlowElement,Queue<CostTrace>>();tickets=new ConditionalWeakTable<InventoryItem,Tickets>();current=null;
+   queued=new ConditionalWeakTable<FlowElement,Queue<CostTrace>>();tickets=new ConditionalWeakTable<InventoryItem,Tickets>();current=null;ResetIncome();
   }
   internal static CostTrace Trace(InventoryItem item)=>traces.TryGetValue(item,out var t)?t:new CostTrace{Complete=false};
   internal static void SetTrace(InventoryItem item,CostTrace trace){traces.Remove(item);traces.Add(item,trace);}
@@ -61,7 +61,7 @@ namespace KingdomLedger
    harmony.Patch(AccessTools.Method(typeof(GamePlayer),"AddCurrency",new[]{typeof(Currency),typeof(long),typeof(bool)}),postfix:Patch(nameof(Earned)));
   }
   static HarmonyMethod Patch(string name)=>new HarmonyMethod(typeof(LedgerObserver).GetMethod(name,BindingFlags.Static|BindingFlags.NonPublic));
-  static void Enter(FlowElement __instance,MethodBase __originalMethod,out Scope __state)
+  static void Enter(FlowElement __instance,MethodBase __originalMethod,object[] __args,out Scope __state)
   {
    __state=null;
    try
@@ -73,7 +73,8 @@ namespace KingdomLedger
     __state=new Scope{Parent=current,Element=__instance,Method=method,
      Outputs=new HashSet<InventoryItem>(__instance.Outputs.SelectMany(o=>o.BufferedItems)),
      Input=(__instance as RecipeElement)?.Input,Human=(__instance as Outfitter)?.CurrentHuman,Equipment=(__instance as Outfitter)?.CurrentEquip,
-     Queued=QueueCount(__instance),Till=(__instance as Shop)?.CollectedGold??0};
+     Queued=QueueCount(__instance),Delta=method=="Update"&&__args.Length>0&&__args[0] is float delta?delta:0};
+    CaptureIncome(__state);
     current=__state;
    }
    catch(Exception e){LedgerPlugin.Warn("Observer start: "+e.Message);}
@@ -83,6 +84,7 @@ namespace KingdomLedger
    if(element is RecipeElement r&&r.Recipe!=null)return element.ElementType+" / "+Translation.Translate(r.Recipe.DisplayName);
    if(element is ResourceElement s&&s.Resource!=null)return element.ElementType+" / "+Translation.Translate(s.Resource.PreviewItem.DisplayName);
    if(element is Forest f&&f.SelectedResource!=null)return "Forest / "+Translation.Translate(f.SelectedResource.PreviewItem.DisplayName);
+   if(IsIncomeReceiver(element))return element.ElementType+" / "+Translation.Translate(element.Label);
    return element.ElementType;
   }
   static int QueueCount(FlowElement e)=>e is ResourceElement r?r.QueuedCount:e is Forest f?f.QueuedCount:0;
@@ -112,6 +114,7 @@ namespace KingdomLedger
     return;
    }
    var outputs=e.Outputs.SelectMany(o=>o.BufferedItems).Where(i=>!s.Outputs.Contains(i)).Distinct().ToArray();
+   if(FinishIncome(s))return;
    if(e is Outfitter outfitter)
    {
     // Outfitter consumes both inputs at the START of a job, then emits the
@@ -146,6 +149,7 @@ namespace KingdomLedger
      }
      else trace=Inputs(s.Input?.AllItems??Enumerable.Empty<InventoryItem>());
      if(s.Input==null||!batches.TryGetValue(s.Input,out _))trace.Complete=false;
+     foreach(var reward in s.Earned)CostTrace.Add(trace.Rewards,reward.Key,reward.Value);
      trace.Stage(Stage(e),new Dictionary<string,decimal>(),outputs.Length);
      foreach(var output in outputs)SetTrace(output,trace.Copy(1m/outputs.Length));
     }
@@ -169,22 +173,6 @@ namespace KingdomLedger
     // The paid output bears the paid resource ticket; no cost is duplicated.
     trace.Stage(Stage(e),new Dictionary<string,decimal>(),outputs.Length);
     foreach(var output in outputs){var unit=trace.Copy(1m/outputs.Length);CostTrace.Add(unit.Resources,output.Type.Identifier,1);SetTrace(output,unit);}
-    return;
-   }
-   if(Ledger.IsShop(e)&&s.Consumed.Count>0)
-   {
-    if(e is Shop shop)CostTrace.Add(s.Earned,"Gold",shop.CollectedGold-s.Till);
-    // A native Shop accrues into its till; collection is not another sale.
-    // LuxuryShop pays immediately. No inferred prices or currency conversions.
-    if(s.Consumed.Count==1)
-    {
-     var item=s.Consumed[0];
-     if(tickets.TryGetValue(item,out var t))
-     {
-      foreach(var entry in t.Values)if(entry.ledger.TryGetTarget(out var ledger))ledger.Sale(entry.trace,s.Earned);
-      tickets.Remove(item);
-     }
-    }
     return;
    }
    if(outputs.Length>0)

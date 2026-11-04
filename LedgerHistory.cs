@@ -11,13 +11,14 @@ namespace KingdomLedger
  internal sealed class CostTrace
  {
   internal bool Complete=true;
-  internal readonly Dictionary<string,decimal> Money=new Dictionary<string,decimal>(), Resources=new Dictionary<string,decimal>(), Stages=new Dictionary<string,decimal>();
+  internal readonly Dictionary<string,decimal> Money=new Dictionary<string,decimal>(), Rewards=new Dictionary<string,decimal>(), Resources=new Dictionary<string,decimal>(), Stages=new Dictionary<string,decimal>();
   internal readonly Dictionary<string,Dictionary<string,decimal>> StageMoney=new Dictionary<string,Dictionary<string,decimal>>();
   internal static void Add(Dictionary<string,decimal> d,string key,decimal amount){d.TryGetValue(key,out var old);d[key]=old+amount;}
   internal void Merge(CostTrace t,decimal scale=1)
   {
    if(t==null){Complete=false;return;} Complete &=t.Complete;
    foreach(var p in t.Money)Add(Money,p.Key,p.Value*scale);
+   foreach(var p in t.Rewards)Add(Rewards,p.Key,p.Value*scale);
    foreach(var p in t.Resources)Add(Resources,p.Key,p.Value*scale);
    foreach(var p in t.Stages)Add(Stages,p.Key,p.Value*scale);
    foreach(var stage in t.StageMoney){if(!StageMoney.TryGetValue(stage.Key,out var values))StageMoney[stage.Key]=values=new Dictionary<string,decimal>();foreach(var p in stage.Value)Add(values,p.Key,p.Value*scale);}
@@ -62,14 +63,19 @@ namespace KingdomLedger
   {
    var value=Current().Value;CostTrace.Add(value.Items,item.Type.Identifier,1);
    var trace=LedgerObserver.Trace(item);value.Costs.Merge(trace);if(!trace.Complete)value.UnknownPassed++;
-   if(Ledger.IsShop(destination))LedgerObserver.Ticket(item,this,trace);
+   foreach(var reward in trace.Rewards)CostTrace.Add(value.Revenue,reward.Key,reward.Value);
+   LedgerObserver.Ticket(item,this,trace);
   }
-  internal void Sale(CostTrace trace,IDictionary<string,decimal> revenue)
+  internal void Sale(CostTrace trace,IDictionary<string,decimal> revenue,bool first=true)
   {
-   var value=Current().Value;value.Sold++;value.SaleSeen=true;
+   var value=Current().Value;if(first)value.Sold++;value.SaleSeen=true;
    if(!trace.Complete)value.UnknownSold++;
-   foreach(var p in trace.Money)CostTrace.Add(value.SoldCosts,p.Key,p.Value);
+   if(first)foreach(var p in trace.Money)CostTrace.Add(value.SoldCosts,p.Key,p.Value);
    foreach(var p in revenue)CostTrace.Add(value.Revenue,p.Key,p.Value);
+  }
+  internal void Endpoint(string stage,IDictionary<string,decimal> spend)
+  {
+   Current().Value.Costs.Stage(stage,new Dictionary<string,decimal>(spend),1);
   }
   internal LedgerSummary Summary(int seconds)
   {

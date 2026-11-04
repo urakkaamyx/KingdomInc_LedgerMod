@@ -19,6 +19,21 @@ namespace KingdomLedger
   internal readonly HashSet<FlowElement> Elements=new HashSet<FlowElement>();
   internal bool HasOperatingCosts;
   static bool Paid(CurrencyCollection cost)=>cost!=null&&cost.GetCurrency().Any(p=>p.amt>0);
+  internal static bool HasIncomeDestination(Ledger ledger)
+  {
+   var pending=new Stack<FlowElement>();var seen=new HashSet<FlowElement>();pending.Push(ledger);
+   while(pending.Count>0)
+   {
+    var element=pending.Pop();if(!seen.Add(element))continue;
+    if(LedgerObserver.IsIncomeReceiver(element))return true;
+    foreach(var output in element.Outputs)
+    {
+     var pipe=output.ConnectedPipe;
+     if(pipe!=null&&pipe.ConnectedOutput==output&&pipe.ConnectedInput!=null&&pipe.ConnectedInput.ConnectedPipe==pipe)pending.Push(pipe.ConnectedInput.Parent);
+    }
+   }
+   return false;
+  }
   internal static LedgerChain Read(Ledger ledger)
   {
    var result=new LedgerChain();var grouped=new Dictionary<string,Entry>();

@@ -38,18 +38,22 @@ def main():
     assert dll.read_bytes() == installed.read_bytes() == (tested/'BepInEx/plugins/LedgerMod/LedgerMod.dll').read_bytes()
     assert 'LEDGER_RUNTIME_PASS' in (tested/'diagnostic.log').read_text()
     OUT.mkdir(parents=True, exist_ok=True)
+    published_path = OUT/'NEXUS_RELEASE.json'
+    published = json.loads(published_path.read_text(encoding='utf-8')) if published_path.exists() else {}
+    destination = (f"Existing Nexus page: {published.get('pageUrl')}; API mod {published.get('apiModId')}, file chain {published.get('fileChainId')}. "
+                   f"Published version remains {published.get('version')}; this {VERSION} package is local only.") if published else 'No Nexus destination recorded.'
     entries = {'BepInEx/plugins/LedgerMod/LedgerMod.dll': dll.read_bytes(),
-               'Ledger Mod README.txt': (PROJECT/'README.md').read_bytes(),
-               'Ledger Mod CHANGELOG.txt': (PROJECT/'Nexus/CHANGELOG.txt').read_bytes()}
-    player = OUT / f'KingdomInc-Ledger-Mod-{VERSION}.zip'
+               'Ledger README.txt': (PROJECT/'README.md').read_bytes(),
+               'Ledger CHANGELOG.txt': (PROJECT/'Nexus/CHANGELOG.txt').read_bytes()}
+    player = OUT / f'KingdomInc-Ledger-{VERSION}.zip'
     archive(player, entries)
     sources = list(PROJECT.glob('*.cs')) + [PROJECT/n for n in ['LedgerMod.csproj', 'README.md', '.gitignore', 'install.ps1', 'verify-isolated.ps1']]
     sources += list((PROJECT/'Nexus').glob('*.txt')) + [Path(__file__).resolve()]
-    source = OUT / f'KingdomInc-Ledger-Mod-{VERSION}-source.zip'
+    source = OUT / f'KingdomInc-Ledger-{VERSION}-source.zip'
     archive(source, {'_Mods/LedgerMod/'+p.relative_to(PROJECT).as_posix():p.read_bytes() for p in sources})
     for name in ['NEXUS_DESCRIPTION.bbcode.txt','CHANGELOG.txt']:
         (OUT/name).write_bytes((PROJECT/'Nexus'/name).read_bytes())
-    report = {'name':'Ledger Mod','version':VERSION,'publication':'local only',
+    report = {'name':'Ledger','version':VERSION,'publication':'local only',
               'gameVersion':checks['gameVersion'],'unityVersion':checks['unityVersion'],
               'runtimeChecksPassed':len(checks['checks']),'companionChecksPassed':len(compatibility['checks']),
               'testedAtUtc':checks['testedAtUtc'],'dllSha256':sha(dll.read_bytes()),
@@ -58,21 +62,22 @@ def main():
               'archives':{p.name:{'bytes':p.stat().st_size,'sha256':sha(p.read_bytes())} for p in [player,source]}}
     (OUT/'RELEASE_VERIFICATION.json').write_text(json.dumps(report,indent=2)+'\n')
     (OUT/'SHA256.json').write_text(json.dumps({p.name:sha(p.read_bytes()) for p in [player,source]},indent=2)+'\n')
-    (PROJECT/'Releases/MOD-WORKFLOW.md').write_text(f'''# Ledger Mod release workflow
+    (PROJECT/'Releases/MOD-WORKFLOW.md').write_text(f'''# Ledger release workflow
 
 Version: {VERSION}. Author: Urakka. Plugin: `urakka.kingdominc.ledgermod` / `LedgerMod.dll`.
 Source: `{PROJECT}`. Repository naming convention: `urakkaamyx/KingdomInc_LedgerMod`; no remote repository created.
-Publication scope: local build, installation and release preparation. Nexus page / API mod / file IDs: not created. Vortex: untested.
+Publication scope: local build, installation and release preparation. {destination} Vortex: untested.
 
 ## Acceptance and implementation
 
 - Zero-storage direct transfers, refusal when blocked/full/filtered/disconnected, independent matched lanes, cycle rejection and adjacent-node cleanup.
-- Default 1/1, maximum 5/5, settings saved/copied without copying history.
-- Main-node item names/icons/counts, gear report and rolling second/minute/hour buckets.
+- Default 1/1, maximum 5/5, settings saved/copied without copying history. Width 384 and ports spaced 64 units apart match the native grid; height follows port rows and visible content with no six-row reservation. Legacy native IO loading preserves lane connections while normalizing port positions.
+- Main-node item names/icons/counts, gear report and rolling second/minute/hour buckets. A slim node timer animates and wraps for the selected interval without resetting accounting; changing the period restarts it. The node list expands for additional types; no input/output footer, page counter or paging arrows remain.
 - Observed resource/Forest/crafting costs, paid-batch conservation, explicit unknown history, actual Item/Luxury Shop earnings and no till double-counting.
+- Actual Requisition Office, Disenchanter, Restaurant and Mercenary Guild income, receipt tracking through native storage/routing, proportional contract rewards, passive/pre-existing-income exclusion and manual/automatic tray collection are verified. Upstream native crafting currency rewards retain batch conservation. Full Requisition Offices refuse admission.
 - Session-local cost provenance; unsupported transformations do not claim complete profit. Remove custom nodes before uninstalling.
 - Independent settings overlay stays visible with native HUD canvases hidden; actual mouse clicks and screen bounds are covered.
-- Native bronze/burgundy UI, icon item rows and a complete per-currency revenue/cost/net table. Gold uses gold/silver/copper denominations; both node and popup fit every affected currency. Only item and chain tabs remain. In-game screenshots in Verification; preview screenshots use isolated showcase data.
+- Native bronze/burgundy UI, icon item rows and a complete per-currency revenue/cost/net table. Gold uses gold/silver/copper denominations; both node and popup fit every affected currency. The detailed report shows negative red expenses and positive paper revenue. The node shows only combined profit/loss in a smaller two-column grid, filled left to right then down; partial history uses an estimate marker. Net retains its gain/loss colors. Only item and chain tabs remain. In-game screenshots in Verification; preview screenshots use isolated showcase data.
 - Paid chains and recorded currency activity enable operating costs, revenue and net profit/loss without requiring a shop. Net subtracts all passed-item operating costs; free passthrough chains focus on items with no shop guidance. Paid recipes, native Barracks/Outfitter losses, multiple currencies, missing-cost safeguards and period expiry are verified.
 - Outfitter retains both input histories between intake/completion updates, with successive equipment, duplicate and timeout cases verified. Connected-chain traversal supplies upstream context; reports omit routing/storage and unobserved placeholder rows. Unsupported utilities retain known history.
 - Native recipe spending in all nine currencies, exact denomination display, all visible node/table rows, hidden routing/placeholders, removal of Outputs, loaded coin sprites and screen bounds are verified.
@@ -103,9 +108,9 @@ DLL SHA-256: `{report['dllSha256']}`.
 ## Listing and publication
 
 Draft: Nexus/NEXUS_DESCRIPTION.bbcode.txt. Changelog: Nexus/CHANGELOG.txt.
-Screenshots: Verification/ledger-node.png, ledger-chain-report.png, ledger-outputs.png, ledger-five-pairs.png.
-Native runtime artwork only; no bundled game assets or generated thumbnail. README contains install, update/removal, credits and limits.
-Publication has not run. No external release or page exists for this local build. A first Nexus listing would still need its page metadata and thumbnail.
+Screenshots: Verification/ledger-node.png, ledger-chain-report.png, ledger-currencies-preview.png, ledger-all-currencies-node.png, ledger-five-pairs.png.
+Native game UI assets are referenced at runtime and not bundled. The existing shared-template Ledger cover remains in Assets/Thumbnails. README contains install, update/removal, credits and limits.
+{destination} No upload or listing mutation was performed while preparing this version. Published file/media states remain recorded in Nexus/NEXUS_RELEASE.json and Nexus/NEXUS_MEDIA.json.
 ''', encoding='utf-8')
     print(json.dumps(report,indent=2))
 

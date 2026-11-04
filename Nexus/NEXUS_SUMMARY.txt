@@ -1,0 +1,1 @@
+Track production throughput, upstream resources, operating costs, and profit or loss for each affected currency. Adds a zero-storage Ledger node with second, minute, and hour reports, a timer bar, and up to five matching input/output pairs.

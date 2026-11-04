@@ -70,3 +70,9 @@ Thumbs.db
 
 # Player/source release archives are published separately.
 /Nexus/*.zip
+
+# Local publication receipts and preparation notes.
+/Nexus/PUBLICATION*.json
+/Nexus/MEDIA-STATUS.txt
+/Nexus/NEXUS_DRAFT_FIELDS.txt
+/Nexus/RELEASE_NOTES_*.txt

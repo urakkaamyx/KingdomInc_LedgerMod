@@ -1,34 +1,75 @@
-[b]Ledger Mod[/b]
-Place Ledger at the end of a production chain to see which items pass through, the resources and operating currencies used to make them, and net profit or loss.
+[b][size=5]Ledger Mod[/size][/b]
+See what your production chains produce, what they consume, and whether they earn their keep.
 
-[b]Features[/b]
+Place Ledger between the last producer and its destination to track passing items, upstream resources, operating costs and profit or loss. Item counts and a compact currency report stay visible on the node, with a detailed breakdown available from the gear button.
+
+[b][size=4]Features[/size][/b]
 [list]
-[*]Zero storage: a blocked or full destination leaves the item at the original producer.
-[*]One matching input/output pair by default, expandable to five pairs.
-[*]Item names, icons and counts remain on the main node; six types per page.
-[*]Gear-configured rolling second, minute and hour windows.
-[*]Native bronze and burgundy UI, a revenue/cost/net table for every affected currency, and focused item and production views.
-[*]Gold/silver/copper denominations, native currency icons and separate units for all nine currencies. No hidden secondary currency totals.
-[*]Operating costs, revenue and net profit/loss for paid chains, even without a shop. Free passthrough chains focus on items, with no shop reminders.
-[*]Observed upstream resource/crafting costs, without charging intermediates twice.
-[*]Observed upstream production, including recruitment and equipment branches through Outfitter. Routing/storage nodes and unobserved placeholder rows are hidden.
-[*]Automatic Item Shop and Luxury Shop detection; actual sales determine revenue.
-[*]Separate currencies and explicit incomplete cost history.
+[*][b]Live item tracking.[/b] Item names, native icons and quantities stay visible on the node. The list expands as additional item types pass through.
+[*][b]Profit and loss by currency.[/b] A compact two-column display shows one combined net value for each affected currency. Gains are green and losses are red. Unused currencies stay hidden.
+[*][b]Gold, silver and copper.[/b] Gold amounts use the game's familiar coin denominations. Requisition, Medals, Rings, Mana, Crowns, Ducats, Ingenuity and Faith retain their own units and icons.
+[*][b]Second, minute or hour reports.[/b] Choose a rolling reporting window from the gear menu. A slim gold progress bar shows the selected interval filling and repeating.
+[*][b]Upstream production breakdown.[/b] Inspect observed production stages, raw resources and operating spend, including recruitment and equipment branches through Outfitter. Routing nodes and empty placeholder rows stay out of the report.
+[*][b]Actual destination income.[/b] Track rewards from Item Shops, Luxury Shops, Requisition Offices, Disenchanters, Restaurants and Mercenary Guilds, including destinations reached through native storage and routing nodes.
+[*][b]One to five matching lanes.[/b] Start with one input and one output, then add matching pairs through the gear menu. Each lane operates independently.
+[*][b]Zero item storage.[/b] Ledger forwards items directly. If its receiver is full, disconnected or rejects the item, that item stays at the producer. Full Stockpiles, shop tills and Requisition Offices also block admission.
+[*][b]Native game styling.[/b] Bronze frames, burgundy panels, the game's pixel font and native item/currency icons keep the report consistent with Kingdom Inc.
 [/list]
 
-[b]Requirements and installation[/b]
-Kingdom Inc's Unity Mono build and BepInEx 5. Tested with the locally installed BepInEx 5.4.23.6. No other mod dependency. Extract the player ZIP into the game directory, then restart. The DLL belongs at BepInEx/plugins/LedgerMod/LedgerMod.dll. Manual installation; Vortex deployment is untested.
+[b][size=4]How the accounting works[/size][/b]
+For each affected currency:
+[b]Profit / loss = recorded income minus observed operating costs.[/b]
 
-[b]Unlock[/b]
-Research Ledger beside Accountant, then place it from the utility build menu.
+Currencies are kept separate. A chain that spends Gold and earns Requisition shows its Gold loss and Requisition gain independently; Ledger does not invent an exchange rate or assign a guessed price to raw resources.
 
-[b]Accounting limits[/b]
-Net profit/loss subtracts the observed operating costs of all passed items from confirmed revenue in the reporting window. Expenses without sales appear as losses. History is session-local and resets on load. Items already in production/storage and unsupported special transformations may have missing costs; a complete net figure is withheld for affected items. Native resource, crafting and Outfitter chains are supported. Building/research purchases are excluded. Productivity batch costs are charged once, at their first yield. Resource quantities are not converted into a guessed gold price. Read the included README for full behavior and compatibility details.
+Production costs and upstream crafting currency rewards follow the items that pass through Ledger. Destination income is recorded when the supported building earns it, including rewards added to its collection tray. Collecting that tray manually or automatically does not count the same income again.
 
-[b]Removal[/b]
-Remove Ledger nodes from kingdoms you intend to keep, reconnect their production chains, save and close the game, then remove the LedgerMod plugin directory. Do not load saves containing custom Ledger nodes without the mod.
+Requisition Offices retain unfinished contract contributions until a reward is issued. Shared contributions divide that real reward proportionally; pre-existing progress and passive generation keep their own uncredited share. Disenchanter passive Mana is excluded too.
 
-[b]Credits[/b]
-Native game UI, fonts, frames and icons are referenced at runtime and are not bundled. UI/capture helpers adapted from the author's PartyNode project.
+Paid chains can show operating losses without a shop. Chains with no currency activity remain useful as item-throughput reports. The timer bar repeats independently of the rolling report; it does not wipe the totals when it reaches the end.
 
-Local listing draft only; no Nexus page or remote repository has been created.
+[b][size=4]Getting started[/size][/b]
+1. Research Accountant, then research Ledger.
+2. Place Ledger from the Utility build menu, between the last producer and its destination.
+3. Connect an input and its matching output.
+4. Open the gear to select Second, Minute or Hour and add up to five matching pairs.
+5. Let newly produced items pass through, then inspect Items passed and Chain costs.
+
+[b][size=4]Requirements and installation[/size][/b]
+Requires Kingdom Inc's Unity Mono build and [b]BepInEx 5[/b]. No other mod is required.
+
+1. Install BepInEx 5 for the game if it is not already installed.
+2. Close the game.
+3. Extract the player ZIP into the Kingdom Inc folder containing KingdomInc.exe.
+4. Confirm the DLL is at [b]BepInEx/plugins/LedgerMod/LedgerMod.dll[/b].
+5. Launch the game.
+
+To update, close the game and replace the existing LedgerMod.dll with the new version. Input/output-pair and reporting-window settings are saved with the node.
+
+[b][size=4]History and compatibility[/size][/b]
+[list]
+[*]Accounting history is session-local and resets when a kingdom is loaded. Allow fresh production to pass through after loading.
+[*]Items already in storage or production may have missing upstream history. The node marks the known net amount with [b]~[/b]; the detailed report withholds a complete net figure while affected history remains in the selected window.
+[*]Production costs are attributed when items pass Ledger. This is an item-based chain report, not a log of every change to the kingdom's wallet. Building purchases and research costs are excluded.
+[*]Native resource, Forest, crafting and Outfitter production are supported. Special training/combat chains, portals that reconstruct items and other mods' transformations may have incomplete cost history.
+[*]Party-Up's whole-party output requires a receiver with storage capacity, so Ledger cannot serve as its direct whole-party receiver. Ordinary production pipes are supported.
+[*]Manual installation is supported. Vortex deployment has not been verified.
+[/list]
+
+Version 0.4.2 was tested on [b]Kingdom Inc Release v1.0.10[/b] with BepInEx 5.4.23.6. The isolated verification suite passed [b]194 checks[/b] both standalone and with Party-Up, Sharable Blueprints and Kingdom Factory API installed. This verifies Ledger alongside those plugins, rather than every feature of each companion mod.
+
+[b][size=4]Version 0.4.2[/size][/b]
+[list]
+[*]Added the node's slim reporting timer bar for second, minute and hour windows.
+[*]The bar fills smoothly, repeats at the selected interval and restarts when the reporting window changes.
+[*]Hover the bar to see elapsed seconds. Rolling item counts, costs and income continue across timer cycles.
+[/list]
+
+[b][size=4]Uninstalling[/size][/b]
+Remove Ledger nodes from every kingdom you intend to keep, reconnect their production chains, save, and close the game. Then remove the LedgerMod plugin folder. Do not load a save containing Ledger nodes after removing the mod.
+
+[b][size=4]Bug reports[/size][/b]
+Include your game version, Ledger version, other installed mods, a screenshot of the connected chain and the relevant section of [b]BepInEx/LogOutput.log[/b]. For missing costs or income, describe which items pass through and which building receives them.
+
+[b][size=4]Credits[/size][/b]
+Created by Urakka. Native game fonts, frames and icons are referenced at runtime and are not bundled. UI and isolated capture helpers are adapted from the author's PartyNode project.

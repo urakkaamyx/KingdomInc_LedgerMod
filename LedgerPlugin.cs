@@ -16,22 +16,22 @@ using UnityEngine.UI;
 
 namespace KingdomLedger
 {
- [BepInPlugin(Id,"Ledger Mod",Version)]
+ [BepInPlugin(Id,"Ledger",Version)]
  public sealed partial class LedgerPlugin:BaseUnityPlugin
  {
-  public const string Id="urakka.kingdominc.ledgermod",Version="0.3.0";
+  public const string Id="urakka.kingdominc.ledgermod",Version="0.4.3";
   Harmony harmony;
   static LedgerPlugin instance;
   internal static bool Diagnostic=>Environment.GetCommandLineArgs().Contains("-ledger-smoke");
   internal static void Warn(string message)=>instance?.Logger.LogWarning(message);
   void Awake(){instance=this;harmony=new Harmony(Id);harmony.PatchAll(Assembly.GetExecutingAssembly());if(Diagnostic){Application.runInBackground=true;StartCoroutine(RuntimeCheck());}}
-  void Start(){EnsureResearch();LedgerObserver.Install(harmony);Logger.LogInfo("Ledger ready: zero-storage paired lanes, rolling item/cost report and confirmed shop sales.");}
+  void Start(){EnsureResearch();LedgerObserver.Install(harmony);Logger.LogInfo("Ledger ready: zero-storage paired lanes, rolling item/cost report and observed destination income.");}
   void OnDestroy(){harmony?.UnpatchSelf();instance=null;}
   internal static void EnsureResearch()
   {
    if(TechNode.Get(Ledger.TechId)!=null)return;
    var previous=TechNode.Get("accountant")??TechNode.Get("collector");
-   TechNode.Add(new TechNode(Ledger.TechId){Name="Ledger",Description="Track items, full production costs and actual shop profit. Zero storage; configure 1–5 input/output pairs and second/minute/hour windows with the gear.",NodeType=TechNodeType.FlowElement,Previous=previous,RelativePosition=new Vector2Int(300,-180),IconName="Icons_149",CostTier=previous.CostTier,CostCurrency=previous.CostCurrency,CostMultiplier=.5});
+   TechNode.Add(new TechNode(Ledger.TechId){Name="Ledger",Description="Track items, full production costs and actual currency profit. Zero storage; configure 1–5 input/output pairs and second/minute/hour windows with the gear.",NodeType=TechNodeType.FlowElement,Previous=previous,RelativePosition=new Vector2Int(300,-180),IconName="Icons_149",CostTier=previous.CostTier,CostCurrency=previous.CostCurrency,CostMultiplier=.5});
   }
   [HarmonyPatch(typeof(GamePlayer),MethodType.Constructor)]static class Research {static void Prefix()=>EnsureResearch();}
   [HarmonyPatch(typeof(FlowElement),nameof(FlowElement.Create))]static class Factory
@@ -42,6 +42,12 @@ namespace KingdomLedger
     var type=typeof(FlowElement).Assembly.GetType("Assets.Source.Flow.Elements."+name);
     if(type==null)return true;__result=(FlowElement)Activator.CreateInstance(type);return false;
    }
+  }
+  // Native deserialization restores IO positions after DataFromJson. Normalize legacy
+  // 40-unit spacing only after that step, keeping saved pipe/lane identities intact.
+  [HarmonyPatch(typeof(FlowElement),nameof(FlowElement.FromJson))]static class LoadedLayout
+  {
+   static void Postfix(FlowElement __result){if(__result is Ledger ledger)ledger.SetPairs(ledger.Inputs.Count);}
   }
   [HarmonyPatch(typeof(FlowElement),nameof(FlowElement.GetAllTypes))]static class Catalog
   {

@@ -13,8 +13,17 @@ namespace KingdomLedger
  public sealed class Ledger : FlowElement
  {
   public const string TypeId="Ledger", TechId="ledger_mod";
-  public const int Width=400, Height=284;
+  public const int Grid=64, Width=6*Grid, Height=2*Grid;
+  internal static int DisplayHeight(int pairs,int items,int currencies)
+  {
+   int itemBottom=68+Math.Max(1,items)*24;
+   int contentBottom=currencies>0?itemBottom+4+38+Math.Max(0,(currencies+1)/2-1)*20+6:itemBottom+24+8;
+   return Math.Max(Math.Max(Height,pairs*Grid),((contentBottom+Grid-1)/Grid)*Grid);
+  }
   public int Period { get; private set; }=60;
+  double periodStarted=LedgerHistory.Clock();
+  internal double PeriodElapsed=>Math.Max(0,LedgerHistory.Clock()-periodStarted)%Period;
+  internal float PeriodProgress=>(float)(PeriodElapsed/Period);
   public override string ElementType=>TypeId;
   public override string Label=>"Ledger";
   public override string IconName=>"Icons_149";
@@ -25,10 +34,10 @@ namespace KingdomLedger
   public Ledger()
   {
    RequiredTech=TechId; CostCurrency=CurrencyCollection.GoldMedal; CostMultiplier=.25;
-   Description="A zero-storage production ledger. Items enter only when their matching output can deliver immediately. Gear: reporting period, paired ports and full chain costs. Connected Item/Luxury Shop sales determine profit.";
+   Description="A zero-storage production ledger. Items enter only when their matching output can deliver immediately. Gear: reporting period, paired ports and full chain costs. Actual shop sales and currency-converting destinations determine income.";
    SetPairs(1);
   }
-  public void SetPeriod(int seconds) { Period=seconds==1||seconds==3600?seconds:60; }
+  public void SetPeriod(int seconds) { int selected=seconds==1||seconds==3600?seconds:60;if(selected!=Period){Period=selected;periodStarted=LedgerHistory.Clock();} }
   public bool SetPairs(int count)
   {
    if(count<1||count>5)return false;
@@ -37,12 +46,15 @@ namespace KingdomLedger
    while(Inputs.Count<count)
    {
     int i=Inputs.Count;
-    Inputs.Add(new FlowInput(this,i){BufferSize=0,Filter=item=>true,Position=-60-40*i});
-    Outputs.Add(new FlowOutput(this,i){BufferSize=0,Position=60+40*i});
+    Inputs.Add(new FlowInput(this,i){BufferSize=0,Filter=item=>true,Position=-10-Grid*i});
+    Outputs.Add(new FlowOutput(this,i){BufferSize=0,Position=10+Grid*i});
    }
    if(Inputs.Count>count){Inputs.RemoveRange(count,Inputs.Count-count); Outputs.RemoveRange(count,Outputs.Count-count);}
-   Size=new Vector2Int(Width,Height);
-   if(World)World.UpdateIO();
+   // Native utility ports begin 10 units into their IO container, one grid row apart.
+   // Rewrite existing positions too, including ports loaded from older saves.
+   for(int i=0;i<count;i++){Inputs[i].Position=-10-Grid*i;Outputs[i].Position=10+Grid*i;}
+   Size=new Vector2Int(Width,DisplayHeight(count,0,0));
+   if(World){World.UpdateIO();World.GetComponent<LedgerWorld>()?.Refresh();}
    return true;
   }
   public override void Update(float delta) { }
@@ -66,6 +78,8 @@ namespace KingdomLedger
      {reason="Stockpile full";return false;}
     if(receiver.Parent is Shop shop && shop.CollectedGold>=shop.MaxGold)
      {reason="Shop till full";return false;}
+    if(receiver.Parent is RequisitionOffice office&&office.CollectedRequisition>=office.MaxRequisition)
+     {reason="Requisition Office full";return false;}
     if(item!=null&&!receiver.CanAcceptItem(item)){reason="Item rejected by destination";return false;}
     reason=null;return true;
    }
@@ -85,10 +99,11 @@ namespace KingdomLedger
   {
    Resolve(this,lane,null,out var receiver,out _,out var reason);
    if(receiver==null)return reason??"Disconnected";
-   return (IsShop(receiver.Parent)?"Sell shop: ":"Not selling: ")+receiver.Parent.ElementType+(reason==null?"":" · "+reason);
+   return (LedgerObserver.IsIncomeReceiver(receiver.Parent)?"Income: ":"Destination: ")+receiver.Parent.ElementType+(reason==null?"":" · "+reason);
   }
   internal static bool IsShop(FlowElement e)=>e is Shop||e is LuxuryShop;
-  internal bool ShowFinancials(LedgerSummary summary)=>HasShopOutput||summary.HasMoneyActivity||LedgerChain.Read(this).HasOperatingCosts;
+  internal bool ShowFinancials(LedgerSummary summary)=>HasIncomeOutput||summary.HasMoneyActivity||LedgerChain.Read(this).HasOperatingCosts;
+  internal bool HasIncomeOutput=>LedgerChain.HasIncomeDestination(this);
   internal bool HasShopOutput
   {
    get
