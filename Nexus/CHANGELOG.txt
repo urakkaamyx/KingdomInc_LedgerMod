@@ -1,3 +1,10 @@
+0.4.4 - Downstream Enchanter accounting
+- Record actual Enchanter currency spending for items that already passed Ledger, including receipt paths through native storage and routing.
+- Count each crafting payment once per Ledger, including multi-input recipes, chained Ledgers and productivity.
+- Preserve receipts through native enchantments and material transformations so later shop income is recognized.
+- Report actual currency-only Enchanter rewards; exclude failed payments and jobs that bypass Ledger.
+- Keep upstream provenance accounting and the grid-aligned node layout intact.
+
 0.4.3 - Grid-aligned node layout
 - Use a six-cell width (384 units) and native 64-unit port spacing so nodes align with the game grid.
 - Size the height from the port count and actual visible report rows, rounded to whole grid cells.

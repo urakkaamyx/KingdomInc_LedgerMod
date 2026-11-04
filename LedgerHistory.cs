@@ -73,9 +73,9 @@ namespace KingdomLedger
    if(first)foreach(var p in trace.Money)CostTrace.Add(value.SoldCosts,p.Key,p.Value);
    foreach(var p in revenue)CostTrace.Add(value.Revenue,p.Key,p.Value);
   }
-  internal void Endpoint(string stage,IDictionary<string,decimal> spend)
+  internal void Endpoint(string stage,IDictionary<string,decimal> spend,decimal quantity=1)
   {
-   Current().Value.Costs.Stage(stage,new Dictionary<string,decimal>(spend),1);
+   Current().Value.Costs.Stage(stage,new Dictionary<string,decimal>(spend),quantity);
   }
   internal LedgerSummary Summary(int seconds)
   {

@@ -251,6 +251,8 @@ namespace KingdomLedger
 
    var log=forest.Outputs[0].AvailableItem;Check(log!=null&&LedgerObserver.Trace(log).Complete&&LedgerObserver.Trace(log).Resources["wood_log"]==1,"Native Forest harvesting carries its raw resources and observed harvest costs");
 
+   EnchanterModelChecks();
+
    OutfitterChecks();
 
   }
@@ -633,6 +635,7 @@ namespace KingdomLedger
      IncomeChecks(ledger,view,directory);
      TimerChecks(ledger,view,directory);
      LayoutWorldChecks(ledger,view,directory);
+     EnchanterWorldChecks(ledger,view,directory);
 
     }catch(Exception e){error=e.ToString();}
 

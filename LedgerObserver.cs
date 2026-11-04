@@ -14,9 +14,9 @@ namespace KingdomLedger
 {
  internal static partial class LedgerObserver
  {
-  internal sealed class Batch {internal CostTrace Cost;internal bool Charged;}
+  internal sealed class Batch {internal CostTrace Cost;internal bool Charged;internal Tickets Receipts;}
   sealed class OutfitBatch {internal InventoryItem Human;internal CostTrace Cost;}
-  sealed class Tickets {internal readonly List<(WeakReference<LedgerHistory> ledger,CostTrace trace)> Values=new List<(WeakReference<LedgerHistory>,CostTrace)>();}
+  internal sealed class Tickets {internal readonly List<(WeakReference<LedgerHistory> ledger,CostTrace trace)> Values=new List<(WeakReference<LedgerHistory>,CostTrace)>();}
   internal sealed class Scope
   {
    internal Scope Parent; internal FlowElement Element;internal string Method;
@@ -140,10 +140,11 @@ namespace KingdomLedger
    }
    if(e is RecipeElement recipe)
    {
-    if(outputs.Length>0)
+    if(outputs.Length>0||(e is Enchanter&&s.Input!=null&&s.Earned.Count>0))
     {
-     CostTrace trace;
-     if(s.Input!=null&&batches.TryGetValue(s.Input,out var batch))
+     CostTrace trace;Batch batch=null;
+     bool observed=s.Input!=null&&batches.TryGetValue(s.Input,out batch),first=observed&&!batch.Charged;
+     if(observed)
      {
       trace=batch.Charged?new CostTrace():batch.Cost.Copy();batch.Charged=true;
      }
@@ -152,11 +153,14 @@ namespace KingdomLedger
      foreach(var reward in s.Earned)CostTrace.Add(trace.Rewards,reward.Key,reward.Value);
      trace.Stage(Stage(e),new Dictionary<string,decimal>(),outputs.Length);
      foreach(var output in outputs)SetTrace(output,trace.Copy(1m/outputs.Length));
+     if(e is Enchanter&&observed)FinishEnchanting(s,batch,outputs,first);
     }
     if(recipe.Input!=null&&!ReferenceEquals(recipe.Input,s.Input))
     {
      var trace=Inputs(s.Consumed);trace.Stage(Stage(e),s.Spent,0);
-     batches.Remove(recipe.Input);batches.Add(recipe.Input,new Batch{Cost=trace});
+     var next=new Batch{Cost=trace};
+     if(e is Enchanter)StartEnchanting(s,next);
+     batches.Remove(recipe.Input);batches.Add(recipe.Input,next);
     }
     return;
    }

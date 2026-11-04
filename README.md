@@ -1,4 +1,4 @@
-# Ledger 0.4.3
+# Ledger 0.4.4
 
 A BepInEx 5 mod for Kingdom Inc. Adds **Ledger** research beside Accountant and a Ledger utility in the build menu.
 
@@ -28,11 +28,13 @@ The interface uses the game's native bronze frames, burgundy panels, pixel font,
 
 Paid chains display their operating loss even without a shop destination: for example, 2 gold of observed costs with no revenue produces -2 gold. Configured native resource, Forest and crafting costs enable this view as soon as the upstream chain is connected, while monetary totals still use actual observations. Disconnecting a shop preserves currency activity until it ages out of the reporting window. A chain with no monetary costs, revenue or supported income destination instead displays item counts, item types, connected pairs, production quantities and raw resources. No shop reminders are shown. A full shop remains a shop destination; chained Ledgers are resolved to their final receiver.
 
+A downstream Enchanter reports its actual currency payment back to every Ledger whose measured items it consumes. This works through native storage/routing nodes, preserves native upgrade-adjusted spending, and never records a failed or merely configured payment. Each job is charged once per Ledger even when it consumes multiple measured inputs. Its receipts survive equipment enchantments, material transformations and output batches, so later supported destination income still reaches the same Ledger. Productivity adds no duplicate batch cost; jobs that bypass Ledger cannot charge it. Currency-only Enchanter recipes also report their actual earned currency. Other downstream production types are not added to this receipt-transfer support by this change.
+
 Output detection is automatic. Item Shop, Luxury Shop, Requisition Office, Disenchanter, Restaurant and Mercenary Guild rewards are tracked in their actual currencies. Receipts follow the original item through routing and storage nodes, so destinations need not be directly beside Ledger. Income is recognized when the native building earns it, including additions to its collection tray; manual or automatic collection never credits it again. Consumed destination items also add that building to the observed chain report.
 
 Requisition Office receipts retain unfinished contract contributions until the game issues a reward. Shared Ledger contributions divide that actual reward proportionally; existing contract progress and passive generation keep their own uncredited share. Fractional amounts represent attribution of a real reward across its contributors. Disenchanter passive Mana is excluded as well. Items that never passed a Ledger cannot credit that Ledger's income. Actual currency rewards earned during upstream crafting travel with the output provenance and are split across batch items, like operating costs.
 
-**Profit/loss = confirmed revenue recorded in the reporting window minus the observed operating costs of all items passed during that window.** Unsold items contribute their recorded costs, and a chain with expenses but no sales shows a loss. Costs are attributed when items pass Ledger; this is not an independent log of every producer payment's original timestamp. Currencies remain separate; 10,000 internal Gold units display as one gold. Resource quantities are not assigned an invented gold price. Building purchases and research are not operating costs and are excluded.
+**Profit/loss = confirmed revenue recorded in the reporting window minus the observed operating costs of all items passed during that window.** Unsold items contribute their recorded costs, and a chain with expenses but no sales shows a loss. Upstream costs are attributed when items pass Ledger; downstream Enchanter payments and destination income use the time the observed payment or reward occurs. This is not an independent log of every producer payment's original timestamp. Currencies remain separate; 10,000 internal Gold units display as one gold. Resource quantities are not assigned an invented gold price. Building purchases and research are not operating costs and are excluded.
 
 ## History and limits
 
@@ -46,7 +48,7 @@ Requisition Office receipts retain unfinished contract contributions until the g
 
 ## Install / update / remove
 
-Requires Kingdom Inc's Unity Mono build and **BepInEx 5**. Built against the local game's assemblies and BepInEx **5.4.23.6** (reported engine version 6000.3.27f2). No Factory API, dashboard, or Party-Up dependency. Exact runtime game/Unity versions are recorded in the verification report.
+Requires Kingdom Inc's Unity Mono build and **BepInEx 5**. Built and runtime-tested on **Kingdom Inc Release v1.0.12** against the local game's assemblies and BepInEx **5.4.23.6** (reported engine version 6000.3.27f2). No Factory API, dashboard, or Party-Up dependency. Exact runtime game/Unity versions are recorded in the verification report.
 
 Extract the player archive into the game directory so `LedgerMod.dll` is at `BepInEx/plugins/LedgerMod/LedgerMod.dll`. Restart the game after installation. Manual installation is supported; Vortex deployment has not been tested.
 

@@ -19,7 +19,7 @@ namespace KingdomLedger
  [BepInPlugin(Id,"Ledger",Version)]
  public sealed partial class LedgerPlugin:BaseUnityPlugin
  {
-  public const string Id="urakka.kingdominc.ledgermod",Version="0.4.3";
+  public const string Id="urakka.kingdominc.ledgermod",Version="0.4.4";
   Harmony harmony;
   static LedgerPlugin instance;
   internal static bool Diagnostic=>Environment.GetCommandLineArgs().Contains("-ledger-smoke");
