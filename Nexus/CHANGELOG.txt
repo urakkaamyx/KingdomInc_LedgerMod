@@ -1,3 +1,10 @@
+0.5.0 - Foundation migration
+- Require Foundation 0.4.0+ and register research and the workspace node through its public API.
+- Move Ledger research to Tech Tree > Mods while retaining Accountant as its prerequisite.
+- Replace Ledger factory/catalog/prefab registration patches with Foundation's native workspace support.
+- Preserve legacy research/building IDs, costs, saved settings and lane connections.
+- Keep Ledger's custom display and zero-storage/accounting adapters; document Foundation extension points still needed.
+
 0.4.4 - Downstream Enchanter accounting
 - Record actual Enchanter currency spending for items that already passed Ledger, including receipt paths through native storage and routing.
 - Count each crafting payment once per Ledger, including multi-input recipes, chained Ledgers and productivity.

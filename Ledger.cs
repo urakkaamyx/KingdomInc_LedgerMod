@@ -6,14 +6,16 @@ using Assets.Source.Flow.Elements;
 using Assets.Source.Items;
 using Assets.Source.Player;
 using LightJson;
+using KingdomFoundation.Api;
 using UnityEngine;
 
 namespace KingdomLedger
 {
- public sealed class Ledger : FlowElement
+ public sealed class Ledger : WorkspaceNode
  {
   public const string TypeId="Ledger", TechId="ledger_mod";
   public const int Grid=64, Width=6*Grid, Height=2*Grid;
+  internal const string NodeDescription="A zero-storage production ledger. Items enter only when their matching output can deliver immediately. Gear: reporting period, paired ports and full chain costs. Actual shop sales and currency-converting destinations determine income.";
   internal static int DisplayHeight(int pairs,int items,int currencies)
   {
    int itemBottom=68+Math.Max(1,items)*24;
@@ -24,17 +26,11 @@ namespace KingdomLedger
   double periodStarted=LedgerHistory.Clock();
   internal double PeriodElapsed=>Math.Max(0,LedgerHistory.Clock()-periodStarted)%Period;
   internal float PeriodProgress=>(float)(PeriodElapsed/Period);
-  public override string ElementType=>TypeId;
-  public override string Label=>"Ledger";
-  public override string IconName=>"Icons_149";
-  public override ElementCategory Category=>ElementCategory.Utility;
-  public override bool HasCraftButton=>false;
-  public override int UpgradeSlots=>0;
   internal readonly LedgerHistory History=new LedgerHistory();
-  public Ledger()
+  public Ledger():base(TypeId)
   {
-   RequiredTech=TechId; CostCurrency=CurrencyCollection.GoldMedal; CostMultiplier=.25;
-   Description="A zero-storage production ledger. Items enter only when their matching output can deliver immediately. Gear: reporting period, paired ports and full chain costs. Actual shop sales and currency-converting destinations determine income.";
+   // Preserve legacy construction currencies; Foundation metadata supplies other defaults.
+   CostCurrency=CurrencyCollection.GoldMedal;
    SetPairs(1);
   }
   public void SetPeriod(int seconds) { int selected=seconds==1||seconds==3600?seconds:60;if(selected!=Period){Period=selected;periodStarted=LedgerHistory.Clock();} }

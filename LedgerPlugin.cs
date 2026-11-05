@@ -13,47 +13,56 @@ using HarmonyLib;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using KingdomFoundation.Api;
 
 namespace KingdomLedger
 {
  [BepInPlugin(Id,"Ledger",Version)]
+ [BepInDependency("urakka.kingdominc.foundation", "0.5.0")]
  public sealed partial class LedgerPlugin:BaseUnityPlugin
  {
-  public const string Id="urakka.kingdominc.ledgermod",Version="0.4.4";
+  public const string Id="urakka.kingdominc.ledgermod",Version="0.5.0";
   Harmony harmony;
   static LedgerPlugin instance;
   internal static bool Diagnostic=>Environment.GetCommandLineArgs().Contains("-ledger-smoke");
   internal static void Warn(string message)=>instance?.Logger.LogWarning(message);
-  void Awake(){instance=this;harmony=new Harmony(Id);harmony.PatchAll(Assembly.GetExecutingAssembly());if(Diagnostic){Application.runInBackground=true;StartCoroutine(RuntimeCheck());}}
-  void Start(){EnsureResearch();LedgerObserver.Install(harmony);Logger.LogInfo("Ledger ready: zero-storage paired lanes, rolling item/cost report and observed destination income.");}
-  void OnDestroy(){harmony?.UnpatchSelf();instance=null;}
-  internal static void EnsureResearch()
+  ITechNode research;
+  IWorkspaceNodeType workspace;
+  internal static ITechNode ResearchRegistration=>instance?.research;
+  internal static IWorkspaceNodeType WorkspaceRegistration=>instance?.workspace;
+  void Awake()
   {
-   if(TechNode.Get(Ledger.TechId)!=null)return;
-   var previous=TechNode.Get("accountant")??TechNode.Get("collector");
-   TechNode.Add(new TechNode(Ledger.TechId){Name="Ledger",Description="Track items, full production costs and actual currency profit. Zero storage; configure 1–5 input/output pairs and second/minute/hour windows with the gear.",NodeType=TechNodeType.FlowElement,Previous=previous,RelativePosition=new Vector2Int(300,-180),IconName="Icons_149",CostTier=previous.CostTier,CostCurrency=previous.CostCurrency,CostMultiplier=.5});
-  }
-  [HarmonyPatch(typeof(GamePlayer),MethodType.Constructor)]static class Research {static void Prefix()=>EnsureResearch();}
-  [HarmonyPatch(typeof(FlowElement),nameof(FlowElement.Create))]static class Factory
-  {
-   static bool Prefix(string name,ref FlowElement __result)
+   instance=this;
+   try
    {
-    if(name==Ledger.TypeId){__result=new Ledger();return false;}
-    var type=typeof(FlowElement).Assembly.GetType("Assets.Source.Flow.Elements."+name);
-    if(type==null)return true;__result=(FlowElement)Activator.CreateInstance(type);return false;
+    RegisterFoundation();
+    harmony=new Harmony(Id);harmony.PatchAll(Assembly.GetExecutingAssembly());
+    LedgerObserver.Install(harmony);
+    if(Diagnostic){Application.runInBackground=true;StartCoroutine(RuntimeCheck());}
    }
+   catch{workspace?.Dispose();research?.Dispose();harmony?.UnpatchSelf();throw;}
+  }
+  void Start(){Logger.LogInfo("Ledger ready through Foundation: native Mods research, registered workspace and zero-storage accounting.");}
+  void OnDestroy(){workspace?.Dispose();research?.Dispose();harmony?.UnpatchSelf();if(instance==this)instance=null;}
+  void RegisterFoundation()
+  {
+   var accountant=TechNode.Get("accountant")??throw new InvalidOperationException("Ledger requires native Accountant research.");
+   // Keep legacy IDs so existing unlocked research, node types and pipe lanes load unchanged.
+   research=FoundationApi.CreateTechNode(new TechNodeDefinition(Ledger.TechId,"Ledger",Vector2.zero,
+    "Track items, full production costs and actual currency profit. Zero storage; configure 1–5 input/output pairs and second/minute/hour windows with the gear.",
+    research:new TechNodeOptions(costTier:accountant.CostTier,costMultiplier:.5,requirements:new[]{accountant.Identifier},iconName:"Icons_149")));
+   // Foundation 0.4.0 exposes tiers but not custom research currency collections.
+   // Its public native bridge preserves Ledger's existing Accountant-based price.
+   var native=((INativeTechNode)research).NativeNode;
+   native.CostCurrency=accountant.CostCurrency;native.ResetCost();
+   workspace=FoundationApi.RegisterWorkspaceNode(new WorkspaceNodeDefinition(Ledger.TypeId,"Ledger",()=>new Ledger(),Ledger.TechId,
+    size:new Vector2Int(Ledger.Width,Ledger.Height),description:Ledger.NodeDescription,iconName:"Icons_149",costMultiplier:.25));
   }
   // Native deserialization restores IO positions after DataFromJson. Normalize legacy
   // 40-unit spacing only after that step, keeping saved pipe/lane identities intact.
   [HarmonyPatch(typeof(FlowElement),nameof(FlowElement.FromJson))]static class LoadedLayout
   {
    static void Postfix(FlowElement __result){if(__result is Ledger ledger)ledger.SetPairs(ledger.Inputs.Count);}
-  }
-  [HarmonyPatch(typeof(FlowElement),nameof(FlowElement.GetAllTypes))]static class Catalog
-  {
-   static Ledger preview;
-   static void Postfix(ref IEnumerable<FlowElement> __result)=>__result=Include(__result);
-   static IEnumerable<FlowElement> Include(IEnumerable<FlowElement> source){bool found=false;foreach(var e in source){found|=e is Ledger;yield return e;}if(!found)yield return preview??(preview=new Ledger());}
   }
   [HarmonyPatch(typeof(FlowIO),nameof(FlowIO.CanAcceptItem))]static class Acceptance
   {
@@ -105,26 +114,19 @@ namespace KingdomLedger
     ((Image)AccessTools.Field(typeof(WorldFlowIO),"_sprite").GetValue(__instance)).sprite=sprites[2];
    }
   }
-  [HarmonyPatch(typeof(FlowPrefabManager),nameof(FlowPrefabManager.Get))]static class Prefab
+  // Foundation owns the generic world prefab, but 0.4.0 has no public view/bind
+  // callback. This scoped adapter adds Ledger's display to the bound native view.
+  [HarmonyPatch(typeof(WorldFlowElement),nameof(WorldFlowElement.SetElement))]static class WorkspaceView
   {
-   static FlowPrefabManager owner;static FlowPrefabSet custom;
-   static bool Prefix(FlowPrefabManager __instance,string id,ref FlowPrefabSet __result)
+   static void Postfix(WorldFlowElement __instance,FlowElement element)
    {
-    if(id!=Ledger.TypeId)return true;
-    if(!custom||owner!=__instance)
+    if(!(element is Ledger)||__instance.GetComponent<LedgerWorld>())return;
+    foreach(var name in new[]{"_icon","_progress","_productivity","_outputFull","_craftButton","_upgradeSlots"})
     {
-     var original=__instance.Get("Collector");var root=new GameObject("LedgerAssets");root.transform.SetParent(__instance.transform,false);root.SetActive(false);
-     custom=UnityEngine.Object.Instantiate(original,root.transform,false);custom.Identifier=Ledger.TypeId;custom.name=Ledger.TypeId;
-     var world=UnityEngine.Object.Instantiate(original.Prefab,root.transform,false);world.name="LedgerPrefab";
-     ((RectTransform)world.transform).sizeDelta=new Vector2(Ledger.Width,Ledger.Height);
-     if(world.GetComponent<WorldFlowCollector>())UnityEngine.Object.DestroyImmediate(world.GetComponent<WorldFlowCollector>());
-     var background=Field<Image>(world,"_background");var label=Field<TMP_Text>(world,"_label");var border=Field<Image>(world,"_labelContainer");
-     foreach(var graphic in world.GetComponentsInChildren<Graphic>(true))if(graphic!=background&&graphic!=label&&graphic!=border)graphic.enabled=false;
-     foreach(var b in world.GetComponentsInChildren<Button>(true))b.enabled=false;
-     foreach(var t in world.GetComponentsInChildren<TooltipSource>(true))t.enabled=false;
-     world.gameObject.AddComponent<LedgerWorld>();AccessTools.Field(typeof(FlowPrefabSet),"<Prefab>k__BackingField").SetValue(custom,world);owner=__instance;
+     var component=AccessTools.Field(typeof(WorldFlowElement),name)?.GetValue(__instance)as Component;
+     if(component)component.gameObject.SetActive(false);
     }
-    __result=custom;return false;
+    __instance.gameObject.AddComponent<LedgerWorld>();
    }
   }
   internal static T Field<T>(WorldFlowElement world,string name)where T:class=>AccessTools.Field(typeof(WorldFlowElement),name).GetValue(world)as T;

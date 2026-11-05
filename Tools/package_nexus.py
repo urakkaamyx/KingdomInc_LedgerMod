@@ -32,6 +32,9 @@ def main():
     compatibility = json.loads((PROJECT / 'Verification/compatibility-tests.json').read_text())
     assert checks['passed'] and compatibility['passed']
     assert checks['version'] == compatibility['version'] == VERSION
+    foundation = GAME/'BepInEx/plugins/Foundation/Foundation.dll'
+    assert checks['foundationVersion'] == compatibility['foundationVersion']
+    assert checks['foundationSha256'] == compatibility['foundationSha256'] == sha(foundation.read_bytes())
     assert checks['saveWritesBlocked'] and not checks['savedKingdomLoaded']
     runtimes = sorted((PROJECT / 'Verification').glob('Runtime-*'), key=lambda p:p.stat().st_mtime, reverse=True)
     tested = next(p for p in runtimes if (p/'_Mods/LedgerMod/Verification/runtime-tests.json').exists())
@@ -44,10 +47,11 @@ def main():
                    f"Published version remains {published.get('version')}; this {VERSION} package is local only.") if published else 'No Nexus destination recorded.'
     entries = {'BepInEx/plugins/LedgerMod/LedgerMod.dll': dll.read_bytes(),
                'Ledger README.txt': (PROJECT/'README.md').read_bytes(),
+               'Ledger requirements.txt': (PROJECT/'Nexus/REQUIREMENTS.txt').read_bytes(),
                'Ledger CHANGELOG.txt': (PROJECT/'Nexus/CHANGELOG.txt').read_bytes()}
     player = OUT / f'KingdomInc-Ledger-{VERSION}.zip'
     archive(player, entries)
-    sources = list(PROJECT.glob('*.cs')) + [PROJECT/n for n in ['LedgerMod.csproj', 'README.md', '.gitignore', 'install.ps1', 'verify-isolated.ps1']]
+    sources = list(PROJECT.glob('*.cs')) + [PROJECT/n for n in ['LedgerMod.csproj', 'README.md', '.gitignore', 'install.ps1', 'verify-isolated.ps1', 'FOUNDATION_INTEGRATION.txt']]
     sources += list((PROJECT/'Nexus').glob('*.txt')) + [Path(__file__).resolve()]
     source = OUT / f'KingdomInc-Ledger-{VERSION}-source.zip'
     archive(source, {'_Mods/LedgerMod/'+p.relative_to(PROJECT).as_posix():p.read_bytes() for p in sources})
@@ -55,6 +59,9 @@ def main():
         (OUT/name).write_bytes((PROJECT/'Nexus'/name).read_bytes())
     report = {'name':'Ledger','version':VERSION,'publication':'local only',
               'gameVersion':checks['gameVersion'],'unityVersion':checks['unityVersion'],
+              'foundationRequirement':'Foundation 0.5.0+ (separate installation)',
+              'foundationVersion':checks['foundationVersion'],'foundationSha256':checks['foundationSha256'],
+              'standalonePlugins':checks['plugins'],'companionPlugins':compatibility['plugins'],
               'runtimeChecksPassed':len(checks['checks']),'companionChecksPassed':len(compatibility['checks']),
               'testedAtUtc':checks['testedAtUtc'],'dllSha256':sha(dll.read_bytes()),
               'gameAssemblySha256':sha((GAME/'KingdomInc_Data/Managed/Assembly-CSharp.dll').read_bytes()),
@@ -65,11 +72,13 @@ def main():
     (PROJECT/'Releases/MOD-WORKFLOW.md').write_text(f'''# Ledger release workflow
 
 Version: {VERSION}. Author: Urakka. Plugin: `urakka.kingdominc.ledgermod` / `LedgerMod.dll`.
+Framework: Foundation 0.5.0+, separate installation; tested {checks['foundationVersion']} ({checks['foundationSha256']}).
 Source: `{PROJECT}`. Repository naming convention: `urakkaamyx/KingdomInc_LedgerMod`; no remote repository created.
 Publication scope: local build, installation and release preparation. {destination} Vortex: untested.
 
 ## Acceptance and implementation
 
+- Foundation public research/workspace registration, Mods-tab research with native Accountant requirement, generic native prefab and legacy-ID kingdom roundtrip. Ledger-specific view/stateless IO/load/accounting adapters are documented in FOUNDATION_INTEGRATION.txt; Foundation source was unchanged.
 - Zero-storage direct transfers, refusal when blocked/full/filtered/disconnected, independent matched lanes, cycle rejection and adjacent-node cleanup.
 - Default 1/1, maximum 5/5, settings saved/copied without copying history. Width 384 and ports spaced 64 units apart match the native grid; height follows port rows and visible content with no six-row reservation. Legacy native IO loading preserves lane connections while normalizing port positions.
 - Main-node item names/icons/counts, gear report and rolling second/minute/hour buckets. A slim node timer animates and wraps for the selected interval without resetting accounting; changing the period restarts it. The node list expands for additional types; no input/output footer, page counter or paging arrows remain.
@@ -88,7 +97,7 @@ Publication scope: local build, installation and release preparation. {destinati
 
 Build: `dotnet build _Mods/LedgerMod/LedgerMod.csproj -c Release --nologo` (passed).
 Runtime: `& ./_Mods/LedgerMod/verify-isolated.ps1` (passed).
-Companions: `& ./_Mods/LedgerMod/verify-isolated.ps1 -WithExistingPlugins` (passed with PartyNode, SharableBlueprints, KingdomFactoryApi).
+Companions: `& ./_Mods/LedgerMod/verify-isolated.ps1 -WithExistingPlugins` (passed with Foundation and all installed companion plugins; see report's companionPlugins).
 Checks: {report['runtimeChecksPassed']} runtime / {report['companionChecksPassed']} companion; exact names in Verification reports.
 Actual game: {checks['gameVersion']}; Unity: {checks['unityVersion']}; local loader BepInEx 5.4.23.6.
 Verification timestamp UTC: {checks['testedAtUtc']}. Disposable kingdom; saves, latest-save loading, achievements and Steam initialization blocked.
@@ -99,7 +108,7 @@ No normal user game was terminated or loaded by diagnostics. Save compatibility 
 Install: `& ./_Mods/LedgerMod/install.ps1 -StageForNextLaunch`; previous mapped DLL preserved outside plugin discovery, fresh DLL staged for restart.
 Package: `python _Mods/LedgerMod/Tools/package_nexus.py`.
 Built, tested and installed DLL bytes matched; ZIP entry inspection and clean extraction passed.
-No game/loader assets, saves, logs, private configuration, or diagnostic runtimes packaged.
+No Foundation/game/loader assemblies, saves, logs, private configuration, or diagnostic runtimes packaged. Foundation remains a required separate dependency.
 Player archive: `{player}` ({player.stat().st_size} bytes).
 SHA-256: `{sha(player.read_bytes())}`.
 Source archive: `{source}` ({source.stat().st_size} bytes).

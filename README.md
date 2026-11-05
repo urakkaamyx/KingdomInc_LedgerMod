@@ -1,6 +1,12 @@
-# Ledger 0.4.4
+# Ledger 0.5.0
 
-A BepInEx 5 mod for Kingdom Inc. Adds **Ledger** research beside Accountant and a Ledger utility in the build menu.
+A BepInEx 5 mod for Kingdom Inc. Uses **Foundation 0.5.0+** to add Ledger research under **Tech Tree → Mods**, requiring Accountant, and a Ledger utility in the native build menu.
+
+## Foundation integration
+
+Install Foundation separately at `BepInEx/plugins/Foundation/Foundation.dll` before launching Ledger 0.5.0. Ledger uses Foundation's public research/workspace registries and native generic node prefab; its zero-storage accounting and custom report remain Ledger-owned. The old `ledger_mod` research ID and `Ledger` building type are retained, so existing unlocks, nodes, pair counts, periods and pipe lanes load without replacement. Newly researched Ledger is on the Mods tab; Accountant stays on Base Game. This migration adds no feature gates or extra research purchases.
+
+[Foundation integration review](FOUNDATION_INTEGRATION.txt) lists framework gaps and the adapters retained in Ledger. The highest priorities are supported custom workspace view binding, stateless IO hooks, shared tech-tree layout/group ownership and post-load/geometry hooks. Foundation source was not changed.
 
 ## Use
 
@@ -48,7 +54,7 @@ Requisition Office receipts retain unfinished contract contributions until the g
 
 ## Install / update / remove
 
-Requires Kingdom Inc's Unity Mono build and **BepInEx 5**. Built and runtime-tested on **Kingdom Inc Release v1.0.12** against the local game's assemblies and BepInEx **5.4.23.6** (reported engine version 6000.3.27f2). No Factory API, dashboard, or Party-Up dependency. Exact runtime game/Unity versions are recorded in the verification report.
+Requires Kingdom Inc's Unity Mono build, **BepInEx 5**, and **Foundation 0.5.0 or later**, installed separately. Built and runtime-tested on **Kingdom Inc Release v1.0.12** against the local game's assemblies and BepInEx **5.4.23.6** (reported engine version 6000.3.27f2). No Factory API, dashboard, or Party-Up dependency. Foundation is a required framework dependency. Exact runtime game/Unity versions are recorded in the verification report.
 
 Extract the player archive into the game directory so `LedgerMod.dll` is at `BepInEx/plugins/LedgerMod/LedgerMod.dll`. Restart the game after installation. Manual installation is supported; Vortex deployment has not been tested.
 
@@ -58,6 +64,8 @@ Before uninstalling, remove Ledger nodes from every kingdom you intend to keep, 
 
 ## Build and verify
 
+Install Foundation 0.5.0+ first. The project references the installed Foundation DLL with `Private=false`; it is not distributed in Ledger archives.
+
 ```
 dotnet build _Mods/LedgerMod/LedgerMod.csproj -c Release
 & ./_Mods/LedgerMod/verify-isolated.ps1
@@ -65,7 +73,7 @@ dotnet build _Mods/LedgerMod/LedgerMod.csproj -c Release
 python _Mods/LedgerMod/Tools/package_nexus.py
 ```
 
-The isolated diagnostic loads a disposable kingdom with save writes, latest-save loads, Steam initialization and achievements disabled. It never loads or terminates the user's normal game. Results and screenshots are in `Verification/`. The optional companion run includes installed PartyNode, SharableBlueprints and KingdomFactoryApi DLLs, with a private API port. It verifies Ledger behavior with those plugins present; it does not claim every feature of those mods has been retested.
+The isolated diagnostic loads a disposable kingdom with save writes, latest-save loads, Steam initialization and achievements disabled. It never loads or terminates the user's normal game. Results and screenshots are in `Verification/`. Both verification modes load the installed Foundation DLL. The companion run also loads the other installed plugins, with a private Factory API port. It verifies Ledger behavior with those plugins present; it does not claim every feature of those mods has been retested.
 
 The package tool checks matching built/installed/tested DLL bytes, passing runtime reports, source and archive paths, clean extraction, and SHA-256. Packages contain the mod DLL and instructions; source packages exclude game/loader assemblies, saves, logs, local configuration, and diagnostic runtimes.
 

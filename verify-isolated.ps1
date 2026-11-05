@@ -15,13 +15,15 @@ New-Item -ItemType Directory -Path (Join-Path $bep 'plugins\LedgerMod'),(Join-Pa
 New-Item -ItemType Junction -Path (Join-Path $bep 'core') -Value (Join-Path $gameRoot 'BepInEx\core') | Out-Null
 Copy-Item -LiteralPath (Join-Path $gameRoot 'BepInEx\config\BepInEx.cfg') -Destination (Join-Path $bep 'config\BepInEx.cfg')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'bin\Release\netstandard2.1\LedgerMod.dll') -Destination (Join-Path $bep 'plugins\LedgerMod\LedgerMod.dll')
+$foundation = Join-Path $gameRoot 'BepInEx\plugins\Foundation\Foundation.dll'
+if (-not (Test-Path -LiteralPath $foundation)) { throw 'Install Foundation 0.5.0 or later before verifying Ledger.' }
+if ([Reflection.AssemblyName]::GetAssemblyName($foundation).Version -lt [Version]'0.5.0') { throw 'Ledger requires Foundation 0.5.0 or later.' }
+New-Item -ItemType Directory -Path (Join-Path $bep 'plugins\Foundation') -Force | Out-Null
+Copy-Item -LiteralPath $foundation -Destination (Join-Path $bep 'plugins\Foundation\Foundation.dll')
 if ($WithExistingPlugins) {
-    foreach ($plugin in @('PartyNode','SharableBlueprints','KingdomFactoryApi')) {
-        $pluginSource = Join-Path $gameRoot ('BepInEx\plugins\' + $plugin + '\' + $plugin + '.dll')
-        if (-not (Test-Path -LiteralPath $pluginSource)) { throw "Missing companion plugin: $pluginSource" }
-        $pluginTarget = Join-Path $bep ('plugins\' + $plugin)
-        New-Item -ItemType Directory -Path $pluginTarget -Force | Out-Null
-        Copy-Item -LiteralPath $pluginSource -Destination (Join-Path $pluginTarget ($plugin + '.dll'))
+    foreach ($plugin in Get-ChildItem -LiteralPath (Join-Path $gameRoot 'BepInEx\plugins') -Directory) {
+        if ($plugin.Name -in @('LedgerMod','Foundation')) { continue }
+        Copy-Item -LiteralPath $plugin.FullName -Destination (Join-Path $bep 'plugins') -Recurse
     }
     # The normal game may already own port 17840. This private runtime uses 17849.
     [IO.File]::WriteAllText((Join-Path $bep 'config\urakka.kingdominc.factoryapi.cfg'), "[Server]`nPort = 17849`n")
@@ -38,10 +40,15 @@ try {
         if (Test-Path -LiteralPath $logPath) { Get-Content -LiteralPath $logPath -Tail 75 }
         throw "Isolated diagnostic did not complete. See $logPath"
     }
+    $owned.WaitForExit(5000) | Out-Null
     $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
-    foreach ($file in Get-ChildItem -LiteralPath $resultFolder -File) { Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $verification $file.Name) -Force }
+    foreach ($file in Get-ChildItem -LiteralPath $resultFolder -File) {
+        if ($WithExistingPlugins -and $file.Name -eq 'runtime-tests.json') { continue }
+        Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $verification $file.Name) -Force
+    }
     if ($WithExistingPlugins) { Copy-Item -LiteralPath $resultPath -Destination (Join-Path $verification 'compatibility-tests.json') -Force }
-    Copy-Item -LiteralPath $logPath -Destination (Join-Path $verification 'unity-isolated.log') -Force
+    $savedLog = if ($WithExistingPlugins) { 'unity-companion.log' } else { 'unity-isolated.log' }
+    Copy-Item -LiteralPath $logPath -Destination (Join-Path $verification $savedLog) -Force
     $result | ConvertTo-Json -Depth 8
     if (-not $result.passed) { throw "Isolated diagnostic failed. See $logPath" }
     Start-Sleep -Seconds 2

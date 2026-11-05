@@ -25,6 +25,7 @@ using Assets.Source.Player;
 using Assets.Source.Util;
 
 using BepInEx;
+using BepInEx.Bootstrap;
 
 using HarmonyLib;
 
@@ -80,7 +81,8 @@ namespace KingdomLedger
 
    LedgerObserver.Reset();
 
-   Check(TechNode.Get(Ledger.TechId)?.Previous.Identifier=="accountant","Ledger research follows Accountant");
+   Check(TechNode.Get(Ledger.TechId)?.AllRequirements.Any(t=>t.Identifier=="accountant")==true,"Foundation Ledger research retains its Accountant prerequisite");
+   FoundationModelChecks();
 
    fixture.AddTech("accountant");fixture.AddTech(Ledger.TechId);
 
@@ -486,6 +488,11 @@ namespace KingdomLedger
      GameUI.Instance.ToggleUI(false);
 
      diagnosticMouse=InputSystem.AddDevice<Mouse>("LedgerDiagnosticMouse");
+     diagnosticKeyboard=InputSystem.AddDevice<Keyboard>("LedgerDiagnosticKeyboard");
+     diagnosticMouse.MakeCurrent();diagnosticKeyboard.MakeCurrent();
+     Assets.Behaviour.Input.PlayerInput.Asset.devices=new InputDevice[]{diagnosticMouse,diagnosticKeyboard};
+     var diagnosticModule=EventSystem.current.currentInputModule as UnityEngine.InputSystem.UI.InputSystemUIInputModule;
+     if(diagnosticModule?.actionsAsset!=null)diagnosticModule.actionsAsset.devices=new InputDevice[]{diagnosticMouse,diagnosticKeyboard};
 
      InputSystem.QueueStateEvent(diagnosticMouse,new MouseState{position=gearScreen});
 
@@ -509,8 +516,6 @@ namespace KingdomLedger
 
      Check(view.Settings!=null&&view.Settings.IsOpen,"Real input-module mouse press and release opens Ledger gear report with HUD hidden");
 
-     diagnosticKeyboard=InputSystem.AddDevice<Keyboard>("LedgerDiagnosticKeyboard");
-
      InputSystem.QueueStateEvent(diagnosticKeyboard,new KeyboardState(Key.Escape));
 
     }catch(Exception e){error=e.ToString();}
@@ -532,6 +537,9 @@ namespace KingdomLedger
     }catch(Exception e){error=e.ToString();}
 
     GameUI.Instance.ToggleUI(true);
+    Assets.Behaviour.Input.PlayerInput.Asset.devices=null;
+    var restoredModule=EventSystem.current.currentInputModule as UnityEngine.InputSystem.UI.InputSystemUIInputModule;
+    if(restoredModule?.actionsAsset!=null)restoredModule.actionsAsset.devices=null;
 
     if(diagnosticKeyboard!=null)InputSystem.RemoveDevice(diagnosticKeyboard);
 
@@ -636,6 +644,7 @@ namespace KingdomLedger
      TimerChecks(ledger,view,directory);
      LayoutWorldChecks(ledger,view,directory);
      EnchanterWorldChecks(ledger,view,directory);
+     FoundationWorldChecks(directory);
 
     }catch(Exception e){error=e.ToString();}
 
@@ -645,6 +654,9 @@ namespace KingdomLedger
 
    var result=new JsonObject{{"passed",error==null},{"savedKingdomLoaded",false},{"saveWritesBlocked",true},{"version",Version},{"gameVersion",Application.version},{"unityVersion",Application.unityVersion},{"testedAtUtc",DateTime.UtcNow.ToString("O")}};
 
+   result["foundationVersion"]=Chainloader.PluginInfos["urakka.kingdominc.foundation"].Metadata.Version.ToString();
+   using(var sha=System.Security.Cryptography.SHA256.Create())result["foundationSha256"]=BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(typeof(KingdomFoundation.Api.FoundationApi).Assembly.Location))).Replace("-","").ToLowerInvariant();
+   result["plugins"]=new JsonArray(Chainloader.PluginInfos.Values.Select(p=>(JsonValue)(p.Metadata.Name+" "+p.Metadata.Version)).ToArray());
    var names=new JsonArray();foreach(var name in checks)names.Add(name);result["checks"]=names;if(error!=null)result["error"]=error;
 
    File.WriteAllText(Path.Combine(directory,"runtime-tests.json"),result.ToString(true));if(error==null)Logger.LogInfo("LEDGER_RUNTIME_PASS: "+checks.Count+" checks");else Logger.LogError(error);

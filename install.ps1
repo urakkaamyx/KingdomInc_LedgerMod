@@ -1,6 +1,7 @@
 param([switch]$StageForNextLaunch)
 $ErrorActionPreference = 'Stop'
 $gameRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
+if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx\plugins\Foundation\Foundation.dll'))) { throw 'Install Foundation 0.5.0 or later before Ledger.' }
 dotnet build (Join-Path $PSScriptRoot 'LedgerMod.csproj') -c Release --nologo
 if ($LASTEXITCODE -ne 0) { throw 'Ledger build failed.' }
 $destination = Join-Path $gameRoot 'BepInEx\plugins\LedgerMod'
