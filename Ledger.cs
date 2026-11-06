@@ -15,12 +15,16 @@ namespace KingdomLedger
  {
   public const string TypeId="Ledger", TechId="ledger_mod";
   public const int Grid=64, Width=6*Grid, Height=2*Grid;
+  // Header band: full-width native backdrop behind the column labels, timer directly below,
+  // then a small gap before the item rows. The first grid row is reserved for the header,
+  // and paired ports begin on the second grid row so totals and ports stay grid-aligned.
+  internal const int HeaderTop=30, HeaderHeight=30, TimerTop=61, ItemTop=72, RowHeight=24;
   internal const string NodeDescription="A zero-storage production ledger. Items enter only when their matching output can deliver immediately. Gear: reporting period, paired ports and full chain costs. Actual shop sales and currency-converting destinations determine income.";
   internal static int DisplayHeight(int pairs,int items,int currencies)
   {
-   int itemBottom=68+Math.Max(1,items)*24;
+   int itemBottom=ItemTop+Math.Max(1,items)*RowHeight;
    int contentBottom=currencies>0?itemBottom+4+38+Math.Max(0,(currencies+1)/2-1)*20+6:itemBottom+24+8;
-   return Math.Max(Math.Max(Height,pairs*Grid),((contentBottom+Grid-1)/Grid)*Grid);
+   return Math.Max(Math.Max(Height,(pairs+1)*Grid),((contentBottom+Grid-1)/Grid)*Grid);
   }
   public int Period { get; private set; }=60;
   double periodStarted=LedgerHistory.Clock();
@@ -42,13 +46,13 @@ namespace KingdomLedger
    while(Inputs.Count<count)
    {
     int i=Inputs.Count;
-    Inputs.Add(new FlowInput(this,i){BufferSize=0,Filter=item=>true,Position=-10-Grid*i});
-    Outputs.Add(new FlowOutput(this,i){BufferSize=0,Position=10+Grid*i});
+    Inputs.Add(new FlowInput(this,i){BufferSize=0,Filter=item=>true,Position=-10-Grid*(i+1)});
+    Outputs.Add(new FlowOutput(this,i){BufferSize=0,Position=10+Grid*(i+1)});
    }
    if(Inputs.Count>count){Inputs.RemoveRange(count,Inputs.Count-count); Outputs.RemoveRange(count,Outputs.Count-count);}
-   // Native utility ports begin 10 units into their IO container, one grid row apart.
+   // Header occupies the first grid row; native ports begin 10 units into the second grid row, one grid row apart.
    // Rewrite existing positions too, including ports loaded from older saves.
-   for(int i=0;i<count;i++){Inputs[i].Position=-10-Grid*i;Outputs[i].Position=10+Grid*i;}
+   for(int i=0;i<count;i++){Inputs[i].Position=-10-Grid*(i+1);Outputs[i].Position=10+Grid*(i+1);}
    Size=new Vector2Int(Width,DisplayHeight(count,0,0));
    if(World){World.UpdateIO();World.GetComponent<LedgerWorld>()?.Refresh();}
    return true;

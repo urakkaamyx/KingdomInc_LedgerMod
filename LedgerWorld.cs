@@ -75,7 +75,7 @@ namespace KingdomLedger
 
    var quantity=ui.Text(body,"QTY",Ledger.Width-100,35,66,24,12);quantity.color=LedgerUi.Muted;quantity.alignment=TextAlignmentOptions.MidlineRight;
 
-   var timer=ui.Fill(body,"WindowTimer",30,61,ContentWidth,4,new Color(.12f,.085f,.10f,.9f));timer.raycastTarget=true;
+   var timer=ui.Fill(body,"WindowTimer",30,Ledger.TimerTop,ContentWidth,4,new Color(.12f,.085f,.10f,.9f));timer.raycastTarget=true;
    timerTip=timer.gameObject.AddComponent<TooltipSource>();timerFill=ui.Fill(timer.transform,"Fill",0,0,0,4,LedgerUi.Gold).rectTransform;
 
    EnsureItemRows(1);
@@ -84,11 +84,27 @@ namespace KingdomLedger
 
    var label=ui.Text(moneyStrip,"PROFIT / LOSS",0,3,ContentWidth,14,10);label.color=LedgerUi.Muted;
 
-   throughput=ui.Text(body,"",32,92,ContentWidth-4,24,14);throughput.name="PassthroughTotal";throughput.color=LedgerUi.Muted;
+   throughput=ui.Text(body,"",32,Ledger.ItemTop+Ledger.RowHeight,ContentWidth-4,24,14);throughput.name="PassthroughTotal";throughput.color=LedgerUi.Muted;
 
-   initialized=true;Refresh();return true;
+   initialized=true;LayoutNativeBackdrops(world);Refresh();return true;
 
   }
+
+  // The generic native building prefab keeps its icon slot and progress frame after
+  // their contents are hidden. Ledger has no building icon, so the slot is hidden, and
+  // the progress frame is reused unchanged as the full-width header band.
+  void LayoutNativeBackdrops(WorldFlowElement world)
+  {
+   var icon=LedgerPlugin.Field<Image>(world,"_icon");
+   if(icon&&icon.transform.parent&&icon.transform.parent!=transform)icon.transform.parent.gameObject.SetActive(false);
+   var progress=LedgerPlugin.Field<Image>(world,"_progress");
+   if(progress&&progress.transform.parent is RectTransform band&&band!=transform)
+   {
+    band.name="LedgerHeaderBand";band.anchorMin=new Vector2(0,1);band.anchorMax=new Vector2(1,1);band.pivot=new Vector2(0,1);
+    band.anchoredPosition=new Vector2(HeaderInset,-Ledger.HeaderTop);band.sizeDelta=new Vector2(-HeaderInset*2,Ledger.HeaderHeight);
+   }
+  }
+  internal const int HeaderInset=20;
 
   void Update()
 
@@ -107,7 +123,7 @@ namespace KingdomLedger
   {
    while(itemRows.Count<count)
    {
-    int i=itemRows.Count;var row=new ItemRow();row.Root=LedgerUi.Rect(body,"ItemRow"+i,30,68+i*24,ContentWidth,24);
+    int i=itemRows.Count;var row=new ItemRow();row.Root=LedgerUi.Rect(body,"ItemRow"+i,30,Ledger.ItemTop+i*Ledger.RowHeight,ContentWidth,24);
     if(i%2==0)row.Shade=ui.Fill(row.Root,"Shade",0,0,ContentWidth,24,new Color(0,0,0,.12f));
     row.Icon=ui.Icon(row.Root,null,6,2,20);row.Icon.name="ItemIcon"+i;
     row.Name=ui.Text(row.Root,"",38,0,ContentWidth-124,24,17);
@@ -132,7 +148,7 @@ namespace KingdomLedger
 
    if(!initialized)return;RefreshTimer();var summary=ledger.History.Summary(ledger.Period);var items=summary.Items.OrderBy(p=>LedgerHistory.ItemName(p.Key)).ToArray();
 
-   int visibleRows=Math.Max(1,items.Length);EnsureItemRows(visibleRows);int itemBottom=68+visibleRows*24;
+   int visibleRows=Math.Max(1,items.Length);EnsureItemRows(visibleRows);int itemBottom=Ledger.ItemTop+visibleRows*Ledger.RowHeight;
 
    string unit=ledger.Period==1?"second":ledger.Period==60?"minute":"hour";
 

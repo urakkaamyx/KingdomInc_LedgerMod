@@ -933,7 +933,7 @@ namespace KingdomLedger
     view.Refresh();var display=view.transform.Find("LedgerDisplay");
     Check(moreItems.Concat(new[]{"iron_ingot"}).All(id=>display.GetComponentsInChildren<TMP_Text>().Any(t=>t.text==LedgerHistory.ItemName(id))),"Removing paging controls keeps every passed item type visible, including a seventh type");
     Check(display.GetComponentsInChildren<Button>().All(b=>b.name=="LedgerGear")&&!display.GetComponentsInChildren<TMP_Text>().Any(t=>t.text.Contains(" in / ")),"Main node has no input/output footer, page counter or paging arrows");
-    Check(ledger.Size.y==Ledger.DisplayHeight(ledger.Inputs.Count,7,9)&&((RectTransform)display.Find("MonetaryTotals")).anchoredPosition.y==-240,"Item list expands above the profit grid while the node ends just below its last currency row");
+    Check(ledger.Size.y==Ledger.DisplayHeight(ledger.Inputs.Count,7,9)&&((RectTransform)display.Find("MonetaryTotals")).anchoredPosition.y==-(Ledger.ItemTop+7*Ledger.RowHeight+4),"Item list expands above the profit grid while the node ends just below its last currency row");
     Capture(Path.Combine(directory,"ledger-node-no-footer.png"));
 
 

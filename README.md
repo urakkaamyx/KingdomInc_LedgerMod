@@ -1,10 +1,10 @@
-# Ledger 0.5.0
+# Ledger 0.5.1
 
 A BepInEx 5 mod for Kingdom Inc. Uses **Foundation 0.5.0+** to add Ledger research under **Tech Tree → Mods**, requiring Accountant, and a Ledger utility in the native build menu.
 
 ## Foundation integration
 
-Install Foundation separately at `BepInEx/plugins/Foundation/Foundation.dll` before launching Ledger 0.5.0. Ledger uses Foundation's public research/workspace registries and native generic node prefab; its zero-storage accounting and custom report remain Ledger-owned. The old `ledger_mod` research ID and `Ledger` building type are retained, so existing unlocks, nodes, pair counts, periods and pipe lanes load without replacement. Newly researched Ledger is on the Mods tab; Accountant stays on Base Game. This migration adds no feature gates or extra research purchases.
+Install Foundation separately at `BepInEx/plugins/Foundation/Foundation.dll` before launching Ledger 0.5.1. Ledger uses Foundation's public research/workspace registries and native generic node prefab; its zero-storage accounting and custom report remain Ledger-owned. The old `ledger_mod` research ID and `Ledger` building type are retained, so existing unlocks, nodes, pair counts, periods and pipe lanes load without replacement. Newly researched Ledger is on the Mods tab; Accountant stays on Base Game. This migration adds no feature gates or extra research purchases.
 
 [Foundation integration review](FOUNDATION_INTEGRATION.txt) lists framework gaps and the adapters retained in Ledger. The highest priorities are supported custom workspace view binding, stateless IO hooks, shared tech-tree layout/group ownership and post-load/geometry hooks. Foundation source was not changed.
 

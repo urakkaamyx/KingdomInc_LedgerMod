@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
- <PropertyGroup><TargetFramework>netstandard2.1</TargetFramework><LangVersion>latest</LangVersion><Version>0.5.0</Version><AssemblyName>LedgerMod</AssemblyName><GameRoot>$(MSBuildThisFileDirectory)..\..\</GameRoot></PropertyGroup>
+ <PropertyGroup><TargetFramework>netstandard2.1</TargetFramework><LangVersion>latest</LangVersion><Version>0.5.1</Version><AssemblyName>LedgerMod</AssemblyName><GameRoot>$(MSBuildThisFileDirectory)..\..\</GameRoot></PropertyGroup>
  <ItemGroup>
   <Reference Include="Foundation"><HintPath>$(GameRoot)BepInEx\plugins\Foundation\Foundation.dll</HintPath><Private>false</Private></Reference>
   <Reference Include="BepInEx"><HintPath>$(GameRoot)BepInEx\core\BepInEx.dll</HintPath><Private>false</Private></Reference>

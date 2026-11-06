@@ -18,7 +18,7 @@ namespace KingdomLedger
    for(int count=1;count<=5;count++)
    {
     layout.SetPairs(count);
-    Check(layout.Size==new Vector2Int(384,Math.Max(128,count*64))&&layout.Inputs.Select((io,i)=>io.Position==-10-i*64).All(v=>v)&&layout.Outputs.Select((io,i)=>io.Position==10+i*64).All(v=>v),"Grid-aligned dimensions and native port spacing for "+count+" Ledger pairs");
+    Check(layout.Size==new Vector2Int(384,(count+1)*64)&&layout.Inputs.Select((io,i)=>io.Position==-10-(i+1)*64).All(v=>v)&&layout.Outputs.Select((io,i)=>io.Position==10+(i+1)*64).All(v=>v),"Grid-aligned dimensions and native port spacing for "+count+" Ledger pairs");
    }
    var source=new Collector();var sink=new Stockpile();var flow=new FlowDiagram{Label="Legacy Ledger layout"};
    flow.Elements.Add(source);flow.Elements.Add(layout);flow.Elements.Add(sink);
@@ -27,7 +27,7 @@ namespace KingdomLedger
    var saved=flow.ToJson();var data=saved["Elements"][1];
    for(int i=0;i<5;i++){data["Inputs"][i].AsJsonObject["Position"]=-60-i*40;data["Outputs"][i].AsJsonObject["Position"]=60+i*40;}
    var restored=FlowDiagram.FromJson(saved);var loaded=restored.Elements.OfType<Ledger>().Single();
-   Check(loaded.Mirrored&&loaded.Period==3600&&loaded.Size==new Vector2Int(384,320)&&loaded.Inputs[4].Position==-266&&loaded.Outputs[4].Position==266,"Legacy saved IO spacing is normalized after native deserialization with settings preserved");
+   Check(loaded.Mirrored&&loaded.Period==3600&&loaded.Size==new Vector2Int(384,384)&&loaded.Inputs[4].Position==-330&&loaded.Outputs[4].Position==330,"Legacy saved IO spacing is normalized after native deserialization with settings preserved");
    Check(loaded.Inputs[4].ConnectedPipe.ConnectedOutput.Parent is Collector&&loaded.Outputs[4].ConnectedPipe.ConnectedInput.Parent is Stockpile&&restored.Pipes.Count==2,"Legacy saved pipes retain their original lane identities after layout migration");
   }
 
@@ -47,13 +47,13 @@ namespace KingdomLedger
     {
      Check(ledger.SetPairs(count),"Physical layout can select "+count+" port pairs");view.Refresh();Canvas.ForceUpdateCanvases();
      var size=((RectTransform)ledger.World.transform).sizeDelta;
-     Check(size==new Vector2(384,Math.Max(128,count*64))&&ledger.World.GetComponentsInChildren<WorldFlowIO>().Count(io=>io.IO?.Parent==ledger)==count*2,"Actual node and collider footprint follow "+count+" port rows without reserved item rows");
+     Check(size==new Vector2(384,(count+1)*64)&&ledger.World.GetComponentsInChildren<WorldFlowIO>().Count(io=>io.IO?.Parent==ledger)==count*2,"Actual node and collider footprint follow "+count+" port rows without reserved item rows");
      for(int i=0;i<count;i++)
      {
       var input=ledger.World.transform.InverseTransformPoint(ledger.Inputs[i].World.transform.position);
       var output=ledger.World.transform.InverseTransformPoint(ledger.Outputs[i].World.transform.position);
       var native=nativeWorld.transform.InverseTransformPoint(distributor.Outputs[i].World.transform.position);
-      Check(Math.Abs(input.x)<.01&&Math.Abs(output.x-384)<.01&&Math.Abs(input.y-native.y)<.01&&Math.Abs(output.y-native.y)<.01,"Ledger pair "+(i+1)+" aligns with native Distributor ports at "+count+" pairs");
+      Check(Math.Abs(input.x)<.01&&Math.Abs(output.x-384)<.01&&Math.Abs(input.y-(native.y-64))<.01&&Math.Abs(output.y-(native.y-64))<.01,"Ledger pair "+(i+1)+" aligns with native Distributor ports at "+count+" pairs");
      }
      var collider=(BoxCollider2D)HarmonyLib.AccessTools.Field(typeof(FlowCollider),"_collider").GetValue(ledger.World.Collider);
      Check(collider.size==size-new Vector2(2,2),"Collision bounds match the resized "+count+"-pair node");
@@ -62,12 +62,15 @@ namespace KingdomLedger
     ledger.Mirrored=true;ledger.World.UpdateIO();Canvas.ForceUpdateCanvases();
     Check(ledger.Inputs.All(io=>Math.Abs(ledger.World.transform.InverseTransformPoint(io.World.transform.position).x-384)<.01)&&ledger.Outputs.All(io=>Math.Abs(ledger.World.transform.InverseTransformPoint(io.World.transform.position).x)<.01),"Mirroring preserves row heights and swaps ports onto the aligned edges");
     ledger.Mirrored=false;ledger.SetPairs(1);
+    var headerBand=view.transform.Find("LedgerHeaderBand") as RectTransform;
+    var iconBackdrop=LedgerPlugin.Field<UnityEngine.UI.Image>(ledger.World,"_icon")?.transform.parent;
+    Check(headerBand!=null&&headerBand.anchoredPosition==new Vector2(LedgerWorld.HeaderInset,-Ledger.HeaderTop)&&headerBand.sizeDelta==new Vector2(-LedgerWorld.HeaderInset*2,Ledger.HeaderHeight)&&(iconBackdrop==null||!iconBackdrop.gameObject.activeSelf),"Native header backdrop stretches full width above the timer bar with the icon slot hidden");
     var item=Item();Seed(item);ledger.History.Pass(item,0,new Stockpile());view.Refresh();
     Check(ledger.Size==new Vector2Int(384,192)&&view.transform.Find("LedgerDisplay/ItemRow0").gameObject.activeSelf&&!view.transform.Find("LedgerDisplay/ItemRow1").gameObject.activeSelf,"Single-item paid report removes blank rows and grows only enough grid cells for its values");
     var strip=(RectTransform)view.transform.Find("LedgerDisplay/MonetaryTotals");
     Check(-strip.anchoredPosition.y+strip.sizeDelta.y<=ledger.Size.y-6&&view.GetComponentsInChildren<TMP_Text>().Any(t=>t.text==LedgerHistory.ItemName("iron_sword")),"Compact layout retains passed items and keeps profit values within the frame");
     Capture(Path.Combine(directory,"ledger-layout-paid.png"));
-    now+=61;view.Refresh();Check(ledger.Size==new Vector2Int(384,128),"Expired report rows release extra grid cells without leaving stale node or collision size");
+    now+=61;view.Refresh();Check(ledger.Size==new Vector2Int(384,Ledger.Height),"Expired report rows release extra grid cells without leaving stale node or collision size");
    }
    finally
    {

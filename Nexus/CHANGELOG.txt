@@ -1,3 +1,10 @@
+0.5.1 - Node header and layout adjustment
+- Stretch the native grey header backdrop across the entire width of the node behind the report label.
+- Hide the top-left icon square backdrop for a cleaner header appearance.
+- Reserve the top 64px grid row for the header and interval timer bar.
+- Shift input and output port pairs down by one grid row (64px) with matching node height expansion while preserving grid snapping.
+- Keep rolling item accounting, item list row height, and currency profit reporting intact.
+
 0.5.0 - Foundation migration
 - Require Foundation 0.4.0+ and register research and the workspace node through its public API.
 - Move Ledger research to Tech Tree > Mods while retaining Accountant as its prerequisite.
