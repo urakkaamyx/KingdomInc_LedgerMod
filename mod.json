@@ -6,9 +6,9 @@
   "description": "For Kingdom Inc game version 1.0.14. Zero-storage production ledger for Kingdom Inc., with matched item lanes, rolling chain costs, per-currency revenue, and confirmed profit or loss.",
   "repository": {
     "platform": "GitHub",
-    "owner": "urakkaamyx",
+    "owner": "KingdomIncModding",
     "name": "KingdomInc_LedgerMod",
-    "url": "https://github.com/urakkaamyx/KingdomInc_LedgerMod",
+    "url": "https://github.com/KingdomIncModding/KingdomInc_LedgerMod",
     "branch": "main",
     "visibility": "public",
     "topics": [
@@ -65,7 +65,7 @@
     "gameIntegration": "Foundation"
   },
   "publishing": {
-    "githubReleases": "https://github.com/urakkaamyx/KingdomInc_LedgerMod/releases/tag/v0.5.1",
+    "githubReleases": "https://github.com/KingdomIncModding/KingdomInc_LedgerMod/releases/tag/v0.5.1",
     "nexusMods": "https://www.nexusmods.com/kingdominc/mods/7",
     "archivePreviousReleases": false
   }

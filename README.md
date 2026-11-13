@@ -2,7 +2,7 @@
 
 **Current release: 0.5.2 — for Kingdom Inc game version 1.0.14.**
 
-[GitHub releases](https://github.com/urakkaamyx/KingdomInc_LedgerMod/releases) · [Nexus Mods](https://www.nexusmods.com/kingdominc/mods/7) · Version 0.5.2
+[GitHub releases](https://github.com/KingdomIncModding/KingdomInc_LedgerMod/releases) · [Nexus Mods](https://www.nexusmods.com/kingdominc/mods/7) · Version 0.5.2
 
 Zero-storage production ledger for Kingdom Inc. See what your production chains produce, what they consume, and whether they earn their keep.
 
@@ -68,4 +68,4 @@ Remove all Ledger nodes from your kingdom and reconnect production lines before 
 
 ## Credits and Source
 
-Created by **Urakka** (rockyamyx). [Source code on GitHub](https://github.com/urakkaamyx/KingdomInc_LedgerMod). Game artwork and assets belong to their respective owners.
+Created by **Urakka** (rockyamyx). [Source code on GitHub](https://github.com/KingdomIncModding/KingdomInc_LedgerMod). Game artwork and assets belong to their respective owners.
