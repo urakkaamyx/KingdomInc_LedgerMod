@@ -1,9 +1,9 @@
 {
   "id": "LedgerMod",
   "name": "Ledger",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "author": "Urakka",
-  "description": "Zero-storage production ledger for Kingdom Inc., with matched item lanes, rolling chain costs, per-currency revenue, and confirmed profit or loss.",
+  "description": "For Kingdom Inc game version 1.0.14. Zero-storage production ledger for Kingdom Inc., with matched item lanes, rolling chain costs, per-currency revenue, and confirmed profit or loss.",
   "repository": {
     "platform": "GitHub",
     "owner": "urakkaamyx",
@@ -32,7 +32,7 @@
         {
           "name": "Foundation",
           "url": "https://www.nexusmods.com/kingdominc/mods/18",
-          "minimumVersion": "0.11.0",
+          "minimumVersion": "0.14.0",
           "type": "nexus"
         },
         {
@@ -50,7 +50,8 @@
         "Utilities for Players"
       ],
       "tagsVerified": true,
-      "requirementsVerified": true
+      "requirementsVerified": true,
+      "runtimeVersionId": "46785078755458"
     }
   },
   "development": {
@@ -59,11 +60,13 @@
     "target": "netstandard2.1",
     "dependencies": [
       "BepInEx 5",
-      "Foundation >= 0.11.0"
-    ]
+      "Foundation 0.14.0"
+    ],
+    "gameIntegration": "Foundation"
   },
   "publishing": {
     "githubReleases": "https://github.com/urakkaamyx/KingdomInc_LedgerMod/releases/tag/v0.5.1",
-    "nexusMods": "https://www.nexusmods.com/kingdominc/mods/7"
+    "nexusMods": "https://www.nexusmods.com/kingdominc/mods/7",
+    "archivePreviousReleases": false
   }
 }

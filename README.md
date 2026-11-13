@@ -1,6 +1,8 @@
 # Ledger
 
-[GitHub releases](https://github.com/urakkaamyx/KingdomInc_LedgerMod/releases) · [Nexus Mods](https://www.nexusmods.com/kingdominc/mods/7) · Version 0.5.1
+**Current release: 0.5.2 — for Kingdom Inc game version 1.0.14.**
+
+[GitHub releases](https://github.com/urakkaamyx/KingdomInc_LedgerMod/releases) · [Nexus Mods](https://www.nexusmods.com/kingdominc/mods/7) · Version 0.5.2
 
 Zero-storage production ledger for Kingdom Inc. See what your production chains produce, what they consume, and whether they earn their keep.
 
@@ -40,7 +42,7 @@ For each affected currency:
 ## Installation
 
 1. Install [BepInEx 5 (Windows x64 Mono)](https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.6).
-2. Install [Foundation](https://www.nexusmods.com/kingdominc/mods/18) (0.11.0 or newer).
+2. Install [Foundation](https://www.nexusmods.com/kingdominc/mods/18) (0.14.0 or newer).
 3. Extract the release ZIP into your Kingdom Inc game folder.
 4. Confirm the file is located at `BepInEx/plugins/LedgerMod/LedgerMod.dll`.
 5. Launch the game and research Ledger in Tech Tree > Mods!
@@ -49,16 +51,16 @@ For each affected currency:
 
 | Class.Method | Hook Type | Impact |
 |---|---|---|
-| FlowIO.CanAcceptItem | Harmony Prefix | Enforces zero-storage admission rules based on downstream receiver readiness. |
-| FlowElement.ClearIO | Harmony Prefix | Prepares zero-storage buffers before clearing I/O to avoid item destruction. |
-| FlowInput.InputItem | Harmony Prefix | Directly forwards items through paired lanes without local storage. |
-| FlowElement.FromJson | Harmony Postfix | Restores configured input/output port pair count from kingdom save data. |
-| WorldFlowIO.SetIO | Harmony Postfix | Applies custom port indicator visuals and colors to Ledger I/O ports. |
-| WorldFlowElement.SetElement | Harmony Postfix | Attaches the Ledger node UI view, currency summary counters, and gear controls. |
-| FlowIO.ConsumeItem | Harmony Postfix | Observes upstream item consumption events across production chains. |
-| GamePlayer.SpendCurrency | Harmony Postfix | Tracks currency spending events for raw material and production cost attribution. |
-| GamePlayer.AddCurrency | Harmony Postfix | Tracks currency income events credited from connected production and sales. |
-| FlowElement.Update / DoManualCraft / QueueCraft | Harmony Prefix & Finalizer | Dynamically scopes active production cycles to attribute item costs and batch yields. |
+| FlowIO.CanAcceptItem | Foundation hook (prefix) | Enforces zero-storage admission rules based on downstream receiver readiness. |
+| FlowElement.ClearIO | Foundation hook (prefix) | Prepares zero-storage buffers before clearing I/O to avoid item destruction. |
+| FlowInput.InputItem | Foundation hook (prefix) | Directly forwards items through paired lanes without local storage. |
+| FlowElement.FromJson | Foundation hook (postfix) | Restores configured input/output port pair count from kingdom save data. |
+| WorldFlowIO.SetIO | Foundation hook (postfix) | Applies custom port indicator visuals and colors to Ledger I/O ports. |
+| WorldFlowElement.SetElement | Foundation hook (postfix) | Attaches the Ledger node UI view, currency summary counters, and gear controls. |
+| FlowIO.ConsumeItem | Foundation hook (postfix) | Observes upstream item consumption events across production chains. |
+| GamePlayer.SpendCurrency | Foundation hook (postfix) | Tracks currency spending events for raw material and production cost attribution. |
+| GamePlayer.AddCurrency | Foundation hook (postfix) | Tracks currency income events credited from connected production and sales. |
+| FlowElement.Update / DoManualCraft / QueueCraft | Foundation execution observer | Dynamically scopes active production cycles to attribute item costs and batch yields. |
 
 ## Removal
 
